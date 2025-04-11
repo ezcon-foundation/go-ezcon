@@ -18,20 +18,23 @@
 package ledger
 
 import (
-	"crypto/sha256"
-	"encoding/json"
+	"github.com/ezcon-foundation/go-ezcon/kyc"
+	"time"
 )
 
-func NewLedger() *Ledger {
-	return &Ledger{
-		Index:    0,
-		Accounts: make(map[string]Account),
-		Hash:     []byte{},
-	}
+type Ledger struct {
+	Index    uint64             `json:"index"`
+	Accounts map[string]Account `json:"accounts"`
+	Hash     []byte             `json:"hash"`
 }
 
-func (l *Ledger) ComputeHash() []byte {
-	data, _ := json.Marshal(l)
-	hash := sha256.Sum256(data)
-	return hash[:]
+type Account struct {
+	AccountID    string      `json:"account_id"`
+	Balance      uint64      `json:"balance"`
+	Sequence     uint32      `json:"sequence"`
+	Reserve      uint64      `json:"reserve"`
+	KYCData      kyc.KYCData `json:"kyc_data"`
+	KYCHash      []byte      `json:"kyc_hash"`
+	KYCVerified  bool        `json:"kyc_verified"`
+	KYCTimestamp time.Time   `json:"kyc_timestamp"`
 }

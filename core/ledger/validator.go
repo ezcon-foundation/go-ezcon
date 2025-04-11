@@ -16,3 +16,36 @@
  */
 
 package ledger
+
+import (
+	"errors"
+	"github.com/ezcon-foundation/go-ezcon/kyc"
+)
+
+func (l *Ledger) ProcessKYCSet(kycSet kyc.KYCSet) error {
+	account, exists := l.Accounts[kycSet.Account]
+	if !exists {
+		return errors.New("account not found")
+	}
+
+	if kycSet.Sequence != account.Sequence {
+		return errors.New("invalid sequence number")
+	}
+
+	const MIN_FEE = 10
+	if kycSet.Fee < MIN_FEE || account.Balance < kycSet.Fee {
+		return errors.New("fee too low or insufficient balance")
+	}
+
+	// Giả lập kiểm tra chữ ký (sẽ thêm crypto sau)
+	account.KYCData = kycSet.KYCData
+	account.KYCHash = kycSet.KYCHash
+	account.KYCVerified = true
+	account.KYCTimestamp = kycSet.Timestamp
+	account.Sequence++
+	account.Balance -= kycSet.Fee
+	account.Reserve += 2
+
+	l.Accounts[kycSet.Account] = account
+	return nil
+}
