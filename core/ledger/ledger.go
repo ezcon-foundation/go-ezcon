@@ -20,6 +20,7 @@ package ledger
 import (
 	"crypto/sha512"
 	"encoding/json"
+	"github.com/ezcon-foundation/go-ezcon/core/types"
 	"github.com/ezcon-foundation/go-ezcon/kyc"
 	"time"
 )
@@ -45,16 +46,16 @@ type LedgerHeader struct {
 
 // Account represents a user account
 type Account struct {
-	AccountID    string      `json:"account_id"`
-	Balance      uint64      `json:"balance"`
-	Sequence     uint32      `json:"sequence"`
-	Reserve      uint64      `json:"reserve"`
-	KYCData      kyc.KYCData `json:"kyc_data"`
-	KYCHash      []byte      `json:"kyc_hash"`
-	KYCVerified  bool        `json:"kyc_verified"`
-	KYCTimestamp time.Time   `json:"kyc_timestamp"`
-	TrustLines   []TrustLine `json:"trust_lines"`
-	Assets       []Asset     `json:"assets"`
+	AccountID    string            `json:"account_id"`
+	Balance      uint64            `json:"balance"`
+	Sequence     uint32            `json:"sequence"`
+	Reserve      uint64            `json:"reserve"`
+	KYCData      kyc.KYCData       `json:"kyc_data"`
+	KYCHash      []byte            `json:"kyc_hash"`
+	KYCVerified  bool              `json:"kyc_verified"`
+	KYCTimestamp time.Time         `json:"kyc_timestamp"`
+	TrustLines   []types.TrustLine `json:"trust_lines"`
+	Assets       []Asset           `json:"assets"`
 }
 
 type Asset struct {
@@ -64,20 +65,6 @@ type Asset struct {
 	Value       uint64 `json:"value"`        // Giá trị ước tính (VND)
 	LegalHash   []byte `json:"legal_hash"`   // Hash hồ sơ pháp lý
 	IsTokenized bool   `json:"is_tokenized"` // Đã token hóa chưa
-}
-
-// TrustLine defines a trust relationship between two accounts
-type TrustLine struct {
-	Account    string    `json:"account"`     // Counterparty account
-	Currency   string    `json:"currency"`    // EZC, USD, REALESTATE, IP, etc.
-	Limit      uint64    `json:"limit"`       // Trust limit
-	Balance    int64     `json:"balance"`     // Current balance
-	QualityIn  uint32    `json:"quality_in"`  // Inbound rate
-	QualityOut uint32    `json:"quality_out"` // Outbound rate
-	Flags      uint32    `json:"flags"`       // NoRipple, Authorized, etc.
-	IsVerified bool      `json:"is_verified"` // Mutually confirmed
-	ExpiresAt  time.Time `json:"expires_at"`  // Expiration time
-	Conditions []string  `json:"conditions"`  // e.g., ["only_token:REALESTATE:NFT123"]
 }
 
 type SHAMap struct {
