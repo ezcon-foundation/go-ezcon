@@ -15,13 +15,16 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ledger
+package crypto
 
-import (
-	"github.com/ezcon-foundation/go-ezcon/core/types"
-)
+// PublicKey là khóa công khai (byte slice)
+type PublicKey []byte
 
-func (l *Ledger) ProcessTransaction(tx types.Transaction) error {
+// PrivateKey là khóa riêng tư (byte slice)
+type PrivateKey []byte
 
-	return nil
-}
+// Signature là chữ ký (byte slice)
+type Signature []byte
+
+// Hash là giá trị hash (byte slice)
+type Hash []byte

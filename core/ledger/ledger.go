@@ -24,51 +24,60 @@ import (
 	"time"
 )
 
+// Ledger represents a snapshot of the blockchain state
 type Ledger struct {
 	Header       LedgerHeader `json:"header"`
-	Accounts     SHAMap       `json:"accounts"`     // Account State Tree
-	Transactions SHAMap       `json:"transactions"` // Transaction Tree
+	Accounts     SHAMap       `json:"accounts"`
+	Transactions SHAMap       `json:"transactions"`
 }
 
+// LedgerHeader contains metadata for the ledger
 type LedgerHeader struct {
-	Index      uint64    `json:"index"`       // Số thứ tự ledger
-	Hash       []byte    `json:"hash"`        // Hash của ledger (SHA-512/256)
-	ParentHash []byte    `json:"parent_hash"` // Hash của ledger trước
-	StateHash  []byte    `json:"state_hash"`  // Hash của Account State Tree
-	TxHash     []byte    `json:"tx_hash"`     // Hash của Transaction Tree
-	TotalCoins uint64    `json:"total_coins"` // Tổng cung coin (Native Coin)
-	CloseTime  time.Time `json:"close_time"`  // Thời gian đóng ledger
-	CloseRes   uint32    `json:"close_res"`   // Độ phân giải thời gian (ms)
+	Index      uint64    `json:"index"`
+	Hash       []byte    `json:"hash"`
+	ParentHash []byte    `json:"parent_hash"`
+	StateHash  []byte    `json:"state_hash"`
+	TxHash     []byte    `json:"tx_hash"`
+	TotalCoins uint64    `json:"total_coins"`
+	CloseTime  time.Time `json:"close_time"`
+	CloseRes   uint32    `json:"close_res"`
 }
 
+// Account represents a user account
 type Account struct {
 	AccountID    string      `json:"account_id"`
-	Balance      uint64      `json:"balance"`       // Số dư (drops)
-	Sequence     uint32      `json:"sequence"`      // Số thứ tự giao dịch
-	Reserve      uint64      `json:"reserve"`       // Dự trữ tối thiểu
-	KYCData      kyc.KYCData `json:"kyc_data"`      // Thông tin KYC
-	KYCHash      []byte      `json:"kyc_hash"`      // Hash của KYCData
-	KYCVerified  bool        `json:"kyc_verified"`  // Trạng thái KYC
-	KYCTimestamp time.Time   `json:"kyc_timestamp"` // Thời gian KYC
-	TrustLines   []TrustLine `json:"trust_lines"`   // Trust lines (nếu có)
-	Offers       []Offer     `json:"offers"`        // Offers trên DEX
+	Balance      uint64      `json:"balance"`
+	Sequence     uint32      `json:"sequence"`
+	Reserve      uint64      `json:"reserve"`
+	KYCData      kyc.KYCData `json:"kyc_data"`
+	KYCHash      []byte      `json:"kyc_hash"`
+	KYCVerified  bool        `json:"kyc_verified"`
+	KYCTimestamp time.Time   `json:"kyc_timestamp"`
+	TrustLines   []TrustLine `json:"trust_lines"`
+	Assets       []Asset     `json:"assets"`
 }
 
+type Asset struct {
+	Type        string `json:"type"`         // Loại tài sản (RealEstate, IntellectualProperty, Financial, ...)
+	ID          string `json:"id"`           // Định danh pháp lý (Sổ đỏ, bằng sáng chế, mã chứng khoán)
+	Description string `json:"description"`  // Mô tả (địa chỉ nhà, tên nhãn hiệu, ...)
+	Value       uint64 `json:"value"`        // Giá trị ước tính (VND)
+	LegalHash   []byte `json:"legal_hash"`   // Hash hồ sơ pháp lý
+	IsTokenized bool   `json:"is_tokenized"` // Đã token hóa chưa
+}
+
+// TrustLine defines a trust relationship between two accounts
 type TrustLine struct {
-	Issuer   string `json:"issuer"`
-	Currency string `json:"currency"`
-	Limit    uint64 `json:"limit"`
-}
-
-type Offer struct {
-}
-
-type Transaction struct {
-	TxType   string      `json:"tx_type"`  // Loại giao dịch (KYCSet, Payment, ...)
-	KYCSet   *kyc.KYCSet `json:"kyc_set"`  // Giao dịch KYCSet (nếu có)
-	Hash     []byte      `json:"hash"`     // Hash giao dịch
-	Result   string      `json:"result"`   // Kết quả (tesSUCCESS, tecFAILED, ...)
-	Metadata []byte      `json:"metadata"` // Thay đổi trạng thái
+	Account    string    `json:"account"`     // Counterparty account
+	Currency   string    `json:"currency"`    // EZC, USD, REALESTATE, IP, etc.
+	Limit      uint64    `json:"limit"`       // Trust limit
+	Balance    int64     `json:"balance"`     // Current balance
+	QualityIn  uint32    `json:"quality_in"`  // Inbound rate
+	QualityOut uint32    `json:"quality_out"` // Outbound rate
+	Flags      uint32    `json:"flags"`       // NoRipple, Authorized, etc.
+	IsVerified bool      `json:"is_verified"` // Mutually confirmed
+	ExpiresAt  time.Time `json:"expires_at"`  // Expiration time
+	Conditions []string  `json:"conditions"`  // e.g., ["only_token:REALESTATE:NFT123"]
 }
 
 type SHAMap struct {
