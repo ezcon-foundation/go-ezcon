@@ -55,16 +55,7 @@ type Account struct {
 	KYCVerified  bool              `json:"kyc_verified"`
 	KYCTimestamp time.Time         `json:"kyc_timestamp"`
 	TrustLines   []types.TrustLine `json:"trust_lines"`
-	Assets       []Asset           `json:"assets"`
-}
-
-type Asset struct {
-	Type        string `json:"type"`         // Loại tài sản (RealEstate, IntellectualProperty, Financial, ...)
-	ID          string `json:"id"`           // Định danh pháp lý (Sổ đỏ, bằng sáng chế, mã chứng khoán)
-	Description string `json:"description"`  // Mô tả (địa chỉ nhà, tên nhãn hiệu, ...)
-	Value       uint64 `json:"value"`        // Giá trị ước tính (VND)
-	LegalHash   []byte `json:"legal_hash"`   // Hash hồ sơ pháp lý
-	IsTokenized bool   `json:"is_tokenized"` // Đã token hóa chưa
+	Assets       []types.Asset     `json:"assets"`
 }
 
 type SHAMap struct {
