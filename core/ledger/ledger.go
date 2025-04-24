@@ -20,8 +20,9 @@ package ledger
 import (
 	"crypto/sha512"
 	"encoding/json"
-	"github.com/ezcon-foundation/go-ezcon/core/types"
-	"github.com/ezcon-foundation/go-ezcon/kyc"
+	"github.com/ezcon-foundation/go-ezcon/core/ledger/account/asset"
+	"github.com/ezcon-foundation/go-ezcon/core/ledger/account/kyc"
+	"github.com/ezcon-foundation/go-ezcon/core/ledger/account/trustline"
 	"time"
 )
 
@@ -46,32 +47,32 @@ type LedgerHeader struct {
 
 // Account represents a user account
 type Account struct {
-	AccountID    string            `json:"account_id"`
-	Balance      uint64            `json:"balance"`
-	Sequence     uint32            `json:"sequence"`
-	Reserve      uint64            `json:"reserve"`
-	KYCData      kyc.KYCData       `json:"kyc_data"`
-	KYCHash      []byte            `json:"kyc_hash"`
-	KYCVerified  bool              `json:"kyc_verified"`
-	KYCTimestamp time.Time         `json:"kyc_timestamp"`
-	TrustLines   []types.TrustLine `json:"trust_lines"`
-	Assets       []types.Asset     `json:"assets"`
+	AccountID    string                `json:"account_id"`
+	Balance      uint64                `json:"balance"`
+	Sequence     uint32                `json:"sequence"`
+	Reserve      uint64                `json:"reserve"`
+	KYCData      kyc.KYCData           `json:"kyc_data"`
+	KYCHash      []byte                `json:"kyc_hash"`
+	KYCVerified  bool                  `json:"kyc_verified"`
+	KYCTimestamp time.Time             `json:"kyc_timestamp"`
+	TrustLines   []trustline.TrustLine `json:"trust_lines"`
+	Assets       []asset.Asset         `json:"assets"`
 }
 
 type SHAMap struct {
-	RootHash []byte          `json:"root_hash"` // Hash gốc của Merkle Tree
-	Nodes    map[string]Node `json:"nodes"`     // Các node trong SHAMap
+	RootHash []byte          `json:"root_hash"` // Root hash of Merkle Tree
+	Nodes    map[string]Node `json:"nodes"`
 }
 
 type Node struct {
-	Hash   []byte `json:"hash"`    // Hash của node
-	Data   []byte `json:"data"`    // Dữ liệu (Account hoặc Transaction)
-	Left   string `json:"left"`    // ID node con trái
-	Right  string `json:"right"`   // ID node con phải
-	IsLeaf bool   `json:"is_leaf"` // Là node lá
+	Hash   []byte `json:"hash"` // Hash của node
+	Data   []byte `json:"data"`
+	Left   string `json:"left"`
+	Right  string `json:"right"`
+	IsLeaf bool   `json:"is_leaf"`
 }
 
-// NewLedger tạo ledger mới
+// NewLedger with the given index, parent hash, and total coins
 func NewLedger(index uint64, parentHash []byte, totalCoins uint64) *Ledger {
 	return &Ledger{
 		Header: LedgerHeader{
@@ -85,14 +86,14 @@ func NewLedger(index uint64, parentHash []byte, totalCoins uint64) *Ledger {
 	}
 }
 
-// ComputeHash tính hash ledger (SHA-512/256)
+// ComputeHash compute hash ledger (SHA-512/256)
 func (l *Ledger) ComputeHash() []byte {
 	data, _ := json.Marshal(l.Header)
 	hash := sha512.Sum512_256(data)
 	return hash[:]
 }
 
-// Close đóng ledger
+// Close gets the close time and updates the ledger state
 func (l *Ledger) Close(closeTime time.Time) {
 	l.Header.CloseTime = closeTime
 	l.Header.StateHash = l.Accounts.RootHash

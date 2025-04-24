@@ -30,4 +30,8 @@ func main() {
 
 	server := rpc.NewServer()
 	_ = server
+
+	// Register the RPC service
+	// Load the ledger
+	// Setup connect with other validator nodes
 }

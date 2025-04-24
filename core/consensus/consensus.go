@@ -15,13 +15,15 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package types
+package consensus
 
-type Asset struct {
-	Type        AssetType `json:"type"`
-	ID          string    `json:"id"`
-	Description string    `json:"description"`
-	Value       uint64    `json:"value"`
-	LegalHash   []byte    `json:"legal_hash"`
-	IsTokenized bool      `json:"is_tokenized"`
+import "github.com/ezcon-foundation/go-ezcon/core/ledger"
+
+type Consensus struct {
+	Ledger    *ledger.Ledger
+	UNL       []string
+	NodeID    string
+	PrivKey   []byte
+	Threshold float64 // 0.8
+	MaxRounds int     // 5
 }

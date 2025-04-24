@@ -15,7 +15,7 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package types
+package transaction
 
 import (
 	"encoding/json"
@@ -25,7 +25,7 @@ import (
 // TxType represents a transaction type
 type TxType int
 
-// Transaction types
+// Transaction transaction
 const (
 	TxTypeKYCSet TxType = iota
 	TxTypePayment

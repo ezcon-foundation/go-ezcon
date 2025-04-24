@@ -15,7 +15,7 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package types
+package transaction
 
 import (
 	"encoding/json"

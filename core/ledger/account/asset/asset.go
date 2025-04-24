@@ -15,13 +15,13 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ledger
+package asset
 
-import (
-	"github.com/ezcon-foundation/go-ezcon/core/types"
-)
-
-func (l *Ledger) ProcessTransaction(tx types.Transaction) error {
-
-	return nil
+type Asset struct {
+	Type        AssetType `json:"type"`
+	ID          string    `json:"id"`
+	Description string    `json:"description"`
+	Value       uint64    `json:"value"`
+	LegalHash   []byte    `json:"legal_hash"`
+	IsTokenized bool      `json:"is_tokenized"`
 }

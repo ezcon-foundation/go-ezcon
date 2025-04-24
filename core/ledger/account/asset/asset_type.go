@@ -15,7 +15,7 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package types
+package asset
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ import (
 
 type AssetType int
 
-// Asset types
+// Asset transaction
 const (
 	AssetTypeRealEstate AssetType = iota
 	AssetTypeVehicle
