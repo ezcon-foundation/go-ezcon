@@ -19,59 +19,84 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 )
 
 // Transaction defines the interface for all transactions
 type Transaction interface {
-	Serialize() ([]byte, error)
+	GetTxType() TxType
 	GetAccount() string
-	GetTxType() string
+	GetSequence() uint64
+	GetFee() uint64
+	Serialize() ([]byte, error)
 }
 
 // BaseTransaction contains common fields
 type BaseTransaction struct {
-	TxType    TxType    `json:"tx_type"`
+	TxType    string    `json:"tx_type"`
 	Account   string    `json:"account"`
-	Sequence  uint32    `json:"sequence"`
+	Sequence  uint64    `json:"sequence"`
 	Fee       uint64    `json:"fee"`
 	Timestamp time.Time `json:"timestamp"`
-	Signature []byte    `json:"signature"`
+	Signature string    `json:"signature"`
 }
-
-func (b *BaseTransaction) GetAccount() string { return b.Account }
-func (b *BaseTransaction) GetTxType() TxType  { return b.TxType }
 
 // Amount represents a currency amount
 type Amount struct {
 	Value    uint64 `json:"value"`
 	Currency string `json:"currency"`
-	Issuer   string `json:"issuer"` // Optional for EZC
+	Issuer   string `json:"issuer"`
 }
 
-// TrustSet initiates a trust line
+// TrustSet transaction
 type TrustSet struct {
 	BaseTransaction
-	TrustAccount string    `json:"trust_account"`
-	LimitAmount  Amount    `json:"limit_amount"`
-	QualityIn    uint32    `json:"quality_in"`
-	QualityOut   uint32    `json:"quality_out"`
-	Flags        uint32    `json:"flags"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	Conditions   []string  `json:"conditions"`
+	Destination string    `json:"destination"`
+	Currency    string    `json:"currency"`
+	Limit       uint64    `json:"limit"`
+	Conditions  []string  `json:"conditions"`
+	ExpiresAt   time.Time `json:"expires_at"`
+}
+
+func (t *TrustSet) GetTxType() TxType {
+	return txTypeValues[t.TxType]
+}
+
+func (t *TrustSet) GetAccount() string {
+	return t.Account
+}
+
+func (t *TrustSet) GetSequence() uint64 {
+	return t.Sequence
+}
+
+func (t *TrustSet) GetFee() uint64 {
+	return t.Fee
 }
 
 func (t *TrustSet) Serialize() ([]byte, error) {
 	return json.Marshal(t)
 }
 
-// TrustConfirm confirms a trust line
-type TrustConfirm struct {
-	BaseTransaction
-	TrustAccount string `json:"trust_account"`
-	Currency     string `json:"currency"`
-}
-
-func (t *TrustConfirm) Serialize() ([]byte, error) {
-	return json.Marshal(t)
+// ParseTransaction parses JSON to Transaction
+func ParseTransaction(rawTx map[string]interface{}) (Transaction, error) {
+	txType, ok := rawTx["tx_type"].(string)
+	if !ok {
+		return nil, errors.New("missing tx_type")
+	}
+	data, err := json.Marshal(rawTx)
+	if err != nil {
+		return nil, err
+	}
+	switch txTypeValues[txType] {
+	case TxTypeTrustSet:
+		var tx TrustSet
+		if err := json.Unmarshal(data, &tx); err != nil {
+			return nil, err
+		}
+		return &tx, nil
+	default:
+		return nil, errors.New("unsupported tx_type")
+	}
 }

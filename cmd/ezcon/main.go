@@ -17,6 +17,17 @@
 
 package main
 
+import (
+	"github.com/ezcon-foundation/go-ezcon/core/ledger"
+	"github.com/gorilla/rpc/v2"
+)
+
+type RPCService struct {
+	Ledger *ledger.Ledger
+}
+
 func main() {
 
+	server := rpc.NewServer()
+	_ = server
 }
