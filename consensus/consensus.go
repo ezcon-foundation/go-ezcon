@@ -18,17 +18,10 @@
 package consensus
 
 import (
-	"encoding/json"
-	"errors"
-	"github.com/ezcon-foundation/go-ezcon/core/ledger"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
-	"github.com/ezcon-foundation/go-ezcon/crypto"
-	"log"
-	"time"
 )
 
 type Consensus struct {
-	Ledger    *ledger.Ledger
 	UNL       []string
 	NodeID    string
 	PrivKey   []byte
@@ -36,9 +29,8 @@ type Consensus struct {
 	MaxRounds int     // 5
 }
 
-func NewConsensus(l *ledger.Ledger, unl []string, nodeID string, privKey []byte) *Consensus {
+func NewConsensus(unl []string, nodeID string, privKey []byte) *Consensus {
 	return &Consensus{
-		Ledger:    l,
 		UNL:       unl,
 		NodeID:    nodeID,
 		PrivKey:   privKey,
@@ -62,83 +54,83 @@ func NewConsensus(l *ledger.Ledger, unl []string, nodeID string, privKey []byte)
 func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
 
 	//TODO: Lưu trữ transaction ở đâu?
+	//
+	//currentTxs := c.Ledger.OpenLedger.ProposedTxs
+	//if len(currentTxs) == 0 {
+	//	return nil, nil
+	//}
+	//votes := make(map[string]int)
+	//
+	//for round := 1; round <= c.MaxRounds; round++ {
+	//
+	//	data, err := json.Marshal(currentTxs)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	sig, err := crypto.Sign(data, c.PrivKey)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	if err := c.Broadcast(currentTxs, sig); err != nil {
+	//		log.Printf("Round %d: Broadcast failed: %v", round, err)
+	//	}
+	//
+	//	for _, node := range c.UNL {
+	//		receivedTxs, receivedSig, err := c.ReceiveFromNode(node)
+	//		if err != nil {
+	//			continue
+	//		}
+	//		pubKey, err := crypto.PubKeyFromNode(node)
+	//		if err != nil {
+	//			continue
+	//		}
+	//		if !crypto.Verify(receivedTxs, receivedSig, pubKey) {
+	//			continue
+	//		}
+	//		var txs []types.Transaction
+	//		if err := json.Unmarshal(receivedTxs, &txs); err != nil {
+	//			continue
+	//		}
+	//
+	//		for _, tx := range txs {
+	//			data, _ := tx.Serialize()
+	//			txID := crypto.SHA256(data)
+	//			votes[string(txID)]++
+	//		}
+	//	}
+	//
+	//	newTxs := []types.Transaction{}
+	//	threshold := c.Threshold * float64(round) / float64(c.MaxRounds)
+	//	if threshold < 0.5 {
+	//		threshold = 0.5
+	//	}
+	//	for _, tx := range currentTxs {
+	//		data, _ := tx.Serialize()
+	//		txID := crypto.SHA256(data)
+	//		voteCount := votes[string(txID)]
+	//		if float64(voteCount)/float64(len(c.UNL)) >= threshold {
+	//			newTxs = append(newTxs, tx)
+	//		}
+	//	}
+	//	currentTxs = newTxs
+	//
+	//	if len(currentTxs) > 0 {
+	//		data, _ := json.Marshal(currentTxs)
+	//		txSetID := crypto.SHA256(data)
+	//		if float64(votes[string(txSetID)]) >= c.Threshold*float64(len(c.UNL)) {
+	//			break
+	//		}
+	//	}
+	//	time.Sleep(1 * time.Second)
+	//}
+	//
+	//data, _ := json.Marshal(currentTxs)
+	//txSetID := crypto.SHA256(data)
+	//if float64(votes[string(txSetID)]) < c.Threshold*float64(len(c.UNL)) {
+	//	return nil, errors.New("consensus not reached")
+	//}
 
-	currentTxs := c.Ledger.OpenLedger.ProposedTxs
-	if len(currentTxs) == 0 {
-		return nil, nil
-	}
-	votes := make(map[string]int)
-
-	for round := 1; round <= c.MaxRounds; round++ {
-
-		data, err := json.Marshal(currentTxs)
-		if err != nil {
-			return nil, err
-		}
-
-		sig, err := crypto.Sign(data, c.PrivKey)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := c.Broadcast(currentTxs, sig); err != nil {
-			log.Printf("Round %d: Broadcast failed: %v", round, err)
-		}
-
-		for _, node := range c.UNL {
-			receivedTxs, receivedSig, err := c.ReceiveFromNode(node)
-			if err != nil {
-				continue
-			}
-			pubKey, err := crypto.PubKeyFromNode(node)
-			if err != nil {
-				continue
-			}
-			if !crypto.Verify(receivedTxs, receivedSig, pubKey) {
-				continue
-			}
-			var txs []types.Transaction
-			if err := json.Unmarshal(receivedTxs, &txs); err != nil {
-				continue
-			}
-
-			for _, tx := range txs {
-				data, _ := tx.Serialize()
-				txID := crypto.SHA256(data)
-				votes[string(txID)]++
-			}
-		}
-
-		newTxs := []types.Transaction{}
-		threshold := c.Threshold * float64(round) / float64(c.MaxRounds)
-		if threshold < 0.5 {
-			threshold = 0.5
-		}
-		for _, tx := range currentTxs {
-			data, _ := tx.Serialize()
-			txID := crypto.SHA256(data)
-			voteCount := votes[string(txID)]
-			if float64(voteCount)/float64(len(c.UNL)) >= threshold {
-				newTxs = append(newTxs, tx)
-			}
-		}
-		currentTxs = newTxs
-
-		if len(currentTxs) > 0 {
-			data, _ := json.Marshal(currentTxs)
-			txSetID := crypto.SHA256(data)
-			if float64(votes[string(txSetID)]) >= c.Threshold*float64(len(c.UNL)) {
-				break
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	data, _ := json.Marshal(currentTxs)
-	txSetID := crypto.SHA256(data)
-	if float64(votes[string(txSetID)]) < c.Threshold*float64(len(c.UNL)) {
-		return nil, errors.New("consensus not reached")
-	}
-
-	return currentTxs, nil
+	return nil, nil
 }

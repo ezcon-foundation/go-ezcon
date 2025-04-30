@@ -18,6 +18,7 @@
 package node
 
 import (
+	"github.com/ezcon-foundation/go-ezcon/config"
 	"github.com/ezcon-foundation/go-ezcon/consensus"
 	"github.com/ezcon-foundation/go-ezcon/core/ledger"
 	"github.com/gorilla/rpc/v2"
@@ -44,20 +45,18 @@ type SubmitTxResponse struct {
 	LedgerIndex uint64 `json:"ledger_index"`
 }
 
-func NewNode() (*Node, error) {
+func NewNode(cfg *config.Config) (*Node, error) {
 	s := rpc.NewServer()
 	s.RegisterCodec(json2.NewCodec(), "application/json")
 	node := &Node{
 		RPCServer: s,
 	}
 
-	node.Consensus = &consensus.Consensus{
-		Ledger:    node.Ledger,
-		NodeID:    "node_id",
-		PrivKey:   []byte("private_key"),
-		Threshold: 0.8,
-		MaxRounds: 5,
-	}
+	node.Consensus = consensus.NewConsensus(
+		[]string{"UNL1", "UNL2"},
+		"NodeID",
+		[]byte("PrivateKey"),
+	)
 
 	err := s.RegisterService(node, "ezcon")
 	if err != nil {

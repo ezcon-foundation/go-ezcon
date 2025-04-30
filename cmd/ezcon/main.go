@@ -18,22 +18,69 @@
 package main
 
 import (
+	"fmt"
+	"github.com/ezcon-foundation/go-ezcon/config"
 	"github.com/ezcon-foundation/go-ezcon/node"
+	"github.com/urfave/cli/v2"
 	"log"
 	"net/http"
+	"os"
+)
+
+var (
+	ConfigFlag = &cli.StringFlag{
+		Name:  "config",
+		Usage: "TOML configuration file",
+	}
+	NodeIDFlag = &cli.StringFlag{
+		Name:  "nodeid",
+		Usage: "Node identifier",
+	}
+	PrivKeyFlag = &cli.StringFlag{
+		Name:  "privkey",
+		Usage: "Private key for signing",
+	}
+	UNLFlag = &cli.StringSliceFlag{
+		Name:  "unl",
+		Usage: "List of trusted validator nodes",
+	}
+	LedgerPathFlag = &cli.StringFlag{
+		Name:  "ledgerpath",
+		Usage: "Path to ledger file",
+	}
+	RPCPortFlag = &cli.StringFlag{
+		Name:  "rpcport",
+		Usage: "RPC server port",
+	}
 )
 
 func main() {
 
-	node, err := node.NewNode()
-	if err != nil {
-		panic(err)
+	app := &cli.App{
+		Name: "ezcon",
+		Action: func(c *cli.Context) error {
+
+			// load config
+			cfg, err := config.LoadConfig(c)
+			if err != nil {
+				return fmt.Errorf("load config failed: %v", err)
+			}
+
+			node, err := node.NewNode(cfg)
+			if err != nil {
+				panic(err)
+			}
+
+			http.Handle("/rpc", node.RPCServer)
+
+			log.Printf("Starting RPC server on :%s", "3000")
+
+			return http.ListenAndServe(fmt.Sprintf(":%v", cfg.RPCPort), nil)
+		},
 	}
 
-	http.Handle("/rpc", node.RPCServer)
-	log.Printf("Starting RPC server on :%s", "3000")
-	if err := http.ListenAndServe("0.0.0.0:3000", nil); err != nil {
-		log.Fatalf("RPC server failed: %v", err)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-
 }
