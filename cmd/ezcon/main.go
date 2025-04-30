@@ -18,15 +18,10 @@
 package main
 
 import (
-	"github.com/ezcon-foundation/go-ezcon/core/ledger"
 	"github.com/ezcon-foundation/go-ezcon/node"
 	"log"
 	"net/http"
 )
-
-type RPCService struct {
-	Ledger *ledger.Ledger
-}
 
 func main() {
 

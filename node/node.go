@@ -18,18 +18,20 @@
 package node
 
 import (
-	"github.com/ezcon-foundation/go-ezcon/core/consensus"
+	"github.com/ezcon-foundation/go-ezcon/consensus"
 	"github.com/ezcon-foundation/go-ezcon/core/ledger"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Node struct {
-	Ledger    *ledger.Ledger
-	Consensus *consensus.Consensus
-	RPCServer *rpc.Server
+	Ledger        *ledger.Ledger
+	Consensus     *consensus.Consensus
+	RPCServer     *rpc.Server
+	IsInConsensus bool
 }
 
 type SubmitTxRequest struct {
@@ -49,12 +51,38 @@ func NewNode() (*Node, error) {
 		RPCServer: s,
 	}
 
+	node.Consensus = &consensus.Consensus{
+		Ledger:    node.Ledger,
+		NodeID:    "node_id",
+		PrivKey:   []byte("private_key"),
+		Threshold: 0.8,
+		MaxRounds: 5,
+	}
+
 	err := s.RegisterService(node, "ezcon")
 	if err != nil {
 		return nil, err
 	}
 
 	return node, nil
+}
+
+func (n *Node) RunValidator() {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if n.IsInConsensus {
+				log.Println("Node is in consensus, skipping...")
+				continue
+			}
+
+			log.Println("Running consensus...")
+
+		}
+	}
 }
 
 func (n *Node) TrustSet(r *http.Request, args *SubmitTxRequest, reply *SubmitTxResponse) error {
