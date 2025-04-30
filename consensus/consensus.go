@@ -24,12 +24,12 @@ import (
 type Consensus struct {
 	UNL       []string
 	NodeID    string
-	PrivKey   []byte
+	PrivKey   string
 	Threshold float64 // 0.8
 	MaxRounds int     // 5
 }
 
-func NewConsensus(unl []string, nodeID string, privKey []byte) *Consensus {
+func NewConsensus(unl []string, nodeID string, privKey string) *Consensus {
 	return &Consensus{
 		UNL:       unl,
 		NodeID:    nodeID,

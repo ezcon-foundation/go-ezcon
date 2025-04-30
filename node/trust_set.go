@@ -15,4 +15,26 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package rpc
+package node
+
+import (
+	"log"
+	"net/http"
+)
+
+type TrustSetRequest struct {
+	RawTx map[string]interface{} `json:"tx"`
+}
+
+type TrustSetResponse struct {
+	Status      string `json:"status"`
+	TxID        string `json:"tx_id"`
+	LedgerIndex uint64 `json:"ledger_index"`
+}
+
+func (n *Node) TrustSet(r *http.Request, args *TrustSetRequest, reply *TrustSetResponse) error {
+
+	log.Println("TrustSet called with args:", args)
+
+	return nil
+}

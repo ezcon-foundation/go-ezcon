@@ -24,7 +24,6 @@ import (
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -35,29 +34,25 @@ type Node struct {
 	IsInConsensus bool
 }
 
-type SubmitTxRequest struct {
-	RawTx map[string]interface{} `json:"tx"`
-}
-
-type SubmitTxResponse struct {
-	Status      string `json:"status"`
-	TxID        string `json:"tx_id"`
-	LedgerIndex uint64 `json:"ledger_index"`
-}
-
 func NewNode(cfg *config.Config) (*Node, error) {
+
+	// create rpc server
 	s := rpc.NewServer()
+
+	// regis codec for rpc server
 	s.RegisterCodec(json2.NewCodec(), "application/json")
+
+	// init node parameter
 	node := &Node{
 		RPCServer: s,
+		Consensus: consensus.NewConsensus(
+			cfg.UNL,
+			cfg.NodeID,
+			cfg.PrivKey,
+		),
 	}
 
-	node.Consensus = consensus.NewConsensus(
-		[]string{"UNL1", "UNL2"},
-		"NodeID",
-		[]byte("PrivateKey"),
-	)
-
+	// regis server under name 'ezcon'
 	err := s.RegisterService(node, "ezcon")
 	if err != nil {
 		return nil, err
@@ -82,11 +77,4 @@ func (n *Node) RunValidator() {
 
 		}
 	}
-}
-
-func (n *Node) TrustSet(r *http.Request, args *SubmitTxRequest, reply *SubmitTxResponse) error {
-
-	log.Println("TrustSet called with args:", args)
-
-	return nil
 }
