@@ -20,7 +20,6 @@ package node
 import (
 	"github.com/ezcon-foundation/go-ezcon/config"
 	"github.com/ezcon-foundation/go-ezcon/consensus"
-	"github.com/ezcon-foundation/go-ezcon/core/ledger"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
 	"log"
@@ -28,7 +27,6 @@ import (
 )
 
 type Node struct {
-	Ledger        *ledger.Ledger
 	Consensus     *consensus.Consensus
 	RPCServer     *rpc.Server
 	IsInConsensus bool

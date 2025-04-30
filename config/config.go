@@ -18,6 +18,8 @@
 package config
 
 import (
+	"encoding/hex"
+	"errors"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -26,7 +28,7 @@ import (
 
 type Config struct {
 	NodeID     string   `toml:"node_id"`
-	PrivKey    string   `toml:"priv_key"`
+	PrivKey    []byte   `toml:"priv_key"`
 	UNL        []string `toml:"unl"`
 	LedgerPath string   `toml:"ledger_path"`
 	RPCPort    string   `toml:"rpc_port"`
@@ -35,7 +37,6 @@ type Config struct {
 func LoadConfig(ctx *cli.Context) (*Config, error) {
 	cfg := &Config{
 		NodeID:     "node1",
-		PrivKey:    "privkey1",
 		UNL:        []string{"node2:8081", "node3:8082"},
 		LedgerPath: "./ledger.json",
 		RPCPort:    "8080",
@@ -50,10 +51,32 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 		}
 		defer f.Close()
 
-		_, err = toml.DecodeFile(file, cfg)
+		var tomlCfg struct {
+			NodeID     string   `toml:"node_id"`
+			PrivKey    string   `toml:"priv_key"`
+			UNL        []string `toml:"unl"`
+			LedgerPath string   `toml:"ledger_path"`
+			RPCPort    string   `toml:"rpc_port"`
+		}
+
+		_, err = toml.DecodeFile(file, &tomlCfg)
 		if err != nil {
 			return nil, err
 		}
+
+		cfg.NodeID = tomlCfg.NodeID
+		if tomlCfg.PrivKey != "" {
+			privKeyBytes, err := hex.DecodeString(tomlCfg.PrivKey)
+			if err != nil || len(privKeyBytes) != 32 {
+				return nil, errors.New("invalid hex private key in TOML")
+			}
+			cfg.PrivKey = privKeyBytes
+		}
+
+		cfg.UNL = tomlCfg.UNL
+		cfg.LedgerPath = tomlCfg.LedgerPath
+		cfg.RPCPort = tomlCfg.RPCPort
+
 	}
 
 	// Áp dụng flags từ CLI
@@ -61,7 +84,11 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 		cfg.NodeID = ctx.String("nodeid")
 	}
 	if ctx.IsSet("privkey") {
-		cfg.PrivKey = ctx.String("privkey")
+		privKeyBytes, err := hex.DecodeString(ctx.String("privkey"))
+		if err != nil || len(privKeyBytes) != 32 {
+			return nil, errors.New("invalid hex private key in CLI")
+		}
+		cfg.PrivKey = privKeyBytes
 	}
 	if ctx.IsSet("unl") {
 		cfg.UNL = ctx.StringSlice("unl")
