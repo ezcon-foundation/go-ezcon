@@ -19,7 +19,9 @@ package main
 
 import (
 	"github.com/ezcon-foundation/go-ezcon/core/ledger"
-	"github.com/gorilla/rpc/v2"
+	"github.com/ezcon-foundation/go-ezcon/node"
+	"log"
+	"net/http"
 )
 
 type RPCService struct {
@@ -28,10 +30,15 @@ type RPCService struct {
 
 func main() {
 
-	server := rpc.NewServer()
-	_ = server
+	node, err := node.NewNode()
+	if err != nil {
+		panic(err)
+	}
 
-	// Register the RPC service
-	// Load the ledger
-	// Setup connect with other validator nodes
+	http.Handle("/rpc", node.RPCServer)
+	log.Printf("Starting RPC server on :%s", "3000")
+	if err := http.ListenAndServe("0.0.0.0:3000", nil); err != nil {
+		log.Fatalf("RPC server failed: %v", err)
+	}
+
 }
