@@ -49,36 +49,6 @@ type Amount struct {
 	Issuer   string `json:"issuer"`
 }
 
-// TrustSet transaction
-type TrustSet struct {
-	BaseTransaction
-	Destination string    `json:"destination"`
-	Currency    string    `json:"currency"`
-	Limit       uint64    `json:"limit"`
-	Conditions  []string  `json:"conditions"`
-	ExpiresAt   time.Time `json:"expires_at"`
-}
-
-func (t *TrustSet) GetTxType() TxType {
-	return txTypeValues[t.TxType]
-}
-
-func (t *TrustSet) GetAccount() string {
-	return t.Account
-}
-
-func (t *TrustSet) GetSequence() uint64 {
-	return t.Sequence
-}
-
-func (t *TrustSet) GetFee() uint64 {
-	return t.Fee
-}
-
-func (t *TrustSet) Serialize() ([]byte, error) {
-	return json.Marshal(t)
-}
-
 // ParseTransaction parses JSON to Transaction
 func ParseTransaction(rawTx map[string]interface{}) (Transaction, error) {
 	txType, ok := rawTx["tx_type"].(string)

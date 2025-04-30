@@ -60,6 +60,9 @@ func NewConsensus(l *ledger.Ledger, unl []string, nodeID string, privKey []byte)
  * Step 9: If the transactions are committed, return the transactions
  */
 func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
+
+	//TODO: Lưu trữ transaction ở đâu?
+
 	currentTxs := c.Ledger.OpenLedger.ProposedTxs
 	if len(currentTxs) == 0 {
 		return nil, nil
