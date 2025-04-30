@@ -1,5 +1,5 @@
 node_id = "node1"
-priv_key = ""
+priv_key = "privkey1"
 unl = ["node2:8081", "node3:8082", "node4:8083", "node5:8084"]
 ledger_path = "./ledger.json"
 rpc_port = "8080"
