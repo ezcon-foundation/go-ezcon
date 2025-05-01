@@ -30,10 +30,11 @@ clean:
 # Tạo file TOML mẫu
 config:
 	@echo 'node_id = "node1"' > ezcon.toml
-	@echo 'priv_key = "privkey1"' >> ezcon.toml
+	@echo 'private_key = "privkey1"' >> ezcon.toml
 	@echo 'unl = ["node2:8081", "node3:8082", "node4:8083", "node5:8084"]' >> ezcon.toml
 	@echo 'ledger_path = "./ledger.json"' >> ezcon.toml
 	@echo 'rpc_port = "8080"' >> ezcon.toml
+	@echo 'consensus_port = "9000"' >> ezcon.toml
 
 # Kiểm tra mã nguồn
 lint:

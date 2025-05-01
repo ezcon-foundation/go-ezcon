@@ -27,20 +27,16 @@ import (
 )
 
 type Config struct {
-	NodeID     string   `toml:"node_id"`
-	PrivKey    []byte   `toml:"priv_key"`
-	UNL        []string `toml:"unl"`
-	LedgerPath string   `toml:"ledger_path"`
-	RPCPort    string   `toml:"rpc_port"`
+	NodeID        string   `toml:"node_id"`
+	PrivKey       []byte   `toml:"private_key"`
+	UNL           []string `toml:"unl"`
+	LedgerPath    string   `toml:"ledger_path"`
+	RPCPort       string   `toml:"rpc_port"`
+	ConsensusPort string   `toml:"consensus_port"`
 }
 
 func LoadConfig(ctx *cli.Context) (*Config, error) {
-	cfg := &Config{
-		NodeID:     "node1",
-		UNL:        []string{"node2:8081", "node3:8082"},
-		LedgerPath: "./ledger.json",
-		RPCPort:    "8080",
-	}
+	cfg := &Config{}
 
 	// Load từ file TOML nếu có
 	if ctx.IsSet("config") {
@@ -52,11 +48,12 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 		defer f.Close()
 
 		var tomlCfg struct {
-			NodeID     string   `toml:"node_id"`
-			PrivKey    string   `toml:"priv_key"`
-			UNL        []string `toml:"unl"`
-			LedgerPath string   `toml:"ledger_path"`
-			RPCPort    string   `toml:"rpc_port"`
+			NodeID        string   `toml:"node_id"`
+			PrivKey       string   `toml:"private_key"`
+			UNL           []string `toml:"unl"`
+			LedgerPath    string   `toml:"ledger_path"`
+			RPCPort       string   `toml:"rpc_port"`
+			ConsensusPort string   `toml:"consensus_port"`
 		}
 
 		_, err = toml.DecodeFile(file, &tomlCfg)
@@ -76,15 +73,15 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 		cfg.UNL = tomlCfg.UNL
 		cfg.LedgerPath = tomlCfg.LedgerPath
 		cfg.RPCPort = tomlCfg.RPCPort
-
+		cfg.ConsensusPort = tomlCfg.ConsensusPort
 	}
 
 	// Áp dụng flags từ CLI
-	if ctx.IsSet("nodeid") {
-		cfg.NodeID = ctx.String("nodeid")
+	if ctx.IsSet("node_id") {
+		cfg.NodeID = ctx.String("node_id")
 	}
-	if ctx.IsSet("privkey") {
-		privKeyBytes, err := hex.DecodeString(ctx.String("privkey"))
+	if ctx.IsSet("private_key") {
+		privKeyBytes, err := hex.DecodeString(ctx.String("private_key"))
 		if err != nil || len(privKeyBytes) != 32 {
 			return nil, errors.New("invalid hex private key in CLI")
 		}
@@ -93,11 +90,14 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 	if ctx.IsSet("unl") {
 		cfg.UNL = ctx.StringSlice("unl")
 	}
-	if ctx.IsSet("ledgerpath") {
-		cfg.LedgerPath = ctx.String("ledgerpath")
+	if ctx.IsSet("ledger_path") {
+		cfg.LedgerPath = ctx.String("ledger_path")
 	}
-	if ctx.IsSet("rpcport") {
-		cfg.RPCPort = ctx.String("rpcport")
+	if ctx.IsSet("rpc_port") {
+		cfg.RPCPort = ctx.String("rpc_port")
+	}
+	if ctx.IsSet("consensus_port") {
+		cfg.ConsensusPort = ctx.String("consensus_port")
 	}
 
 	return cfg, nil
