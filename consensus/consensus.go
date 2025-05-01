@@ -18,11 +18,13 @@
 package consensus
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
 	"github.com/ezcon-foundation/go-ezcon/crypto"
+	"github.com/ezcon-foundation/go-ezcon/network"
 	"log"
-	"net"
+	"sync"
 	"time"
 )
 
@@ -33,17 +35,41 @@ type Consensus struct {
 	PrivKey      []byte
 	Threshold    float64 // 0.8
 	MaxRounds    int     // 5
+
+	// tcp server
+	server *network.TCPServer
+	client *network.TCPClient
+
+	isConsensing bool
+	mutex        sync.Mutex
 }
 
-func NewConsensus(unl []string, nodeID string, privKey []byte) *Consensus {
+func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *Consensus {
 
-	return &Consensus{
+	// create tpc server
+	server, err := network.NewTCPServer(tpcPort)
+	if err != nil {
+		return nil
+	}
+
+	// create tcp client
+	client := network.NewTCPClient(2 * time.Second)
+
+	// init consensus instance
+	c := &Consensus{
 		UNL:       unl,
 		NodeID:    nodeID,
 		PrivKey:   privKey,
 		Threshold: 0.8,
 		MaxRounds: 5,
+		server:    server,
+		client:    client,
 	}
+
+	// start tpc server
+	c.server.Start()
+
+	return c
 }
 
 // RunConsensus runs the consensus algorithm
@@ -60,148 +86,77 @@ func NewConsensus(unl []string, nodeID string, privKey []byte) *Consensus {
  */
 func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
 
-	//TODO: Lưu trữ transaction ở đâu?
-	//
-	currentTxs := c.getProposalTransaction()
-	if len(currentTxs) == 0 {
-		return nil, nil
-	}
-
-	//votes := make(map[string]int)
-
-	for round := 1; round <= c.MaxRounds; round++ {
-		// prepare data for sign
-		data, err := json.Marshal(currentTxs)
-		if err != nil {
-			return nil, err
-		}
-
-		sig, err := crypto.Sign(data, c.PrivKey)
-		if err != nil {
-			return nil, err
-		}
-
-		//
-		if err := c.Broadcast(currentTxs, sig); err != nil {
-			log.Printf("Round %d: Broadcast failed: %v", round, err)
-		}
-
-		for _, node := range c.UNL {
-
-			_ = node
-
-			//receivedTxs, receivedSig, err := c.ReceiveFromNode(node)
-			//if err != nil {
-			//	continue
-			//}
-			//		pubKey, err := crypto.PubKeyFromNode(node)
-			//		if err != nil {
-			//			continue
-			//		}
-			//		if !crypto.Verify(receivedTxs, receivedSig, pubKey) {
-			//			continue
-			//		}
-			//		var txs []types.Transaction
-			//		if err := json.Unmarshal(receivedTxs, &txs); err != nil {
-			//			continue
-			//		}
-			//
-			//		for _, tx := range txs {
-			//			data, _ := tx.Serialize()
-			//			txID := crypto.SHA256(data)
-			//			votes[string(txID)]++
-			//		}
-			//	}
-			//
-			//	newTxs := []types.Transaction{}
-			//	threshold := c.Threshold * float64(round) / float64(c.MaxRounds)
-			//	if threshold < 0.5 {
-			//		threshold = 0.5
-			//	}
-			//	for _, tx := range currentTxs {
-			//		data, _ := tx.Serialize()
-			//		txID := crypto.SHA256(data)
-			//		voteCount := votes[string(txID)]
-			//		if float64(voteCount)/float64(len(c.UNL)) >= threshold {
-			//			newTxs = append(newTxs, tx)
-			//		}
-			//	}
-			//	currentTxs = newTxs
-			//
-			//	if len(currentTxs) > 0 {
-			//		data, _ := json.Marshal(currentTxs)
-			//		txSetID := crypto.SHA256(data)
-			//		if float64(votes[string(txSetID)]) >= c.Threshold*float64(len(c.UNL)) {
-			//			break
-			//		}
-		}
-	}
-
-	//data, _ := json.Marshal(currentTxs)
-	//txSetID := crypto.SHA256(data)
-	//if float64(votes[string(txSetID)]) < c.Threshold*float64(len(c.UNL)) {
-	//	return nil, errors.New("consensus not reached")
-	//}
-
 	return nil, nil
 }
 
-// Broadcast gửi candidate set
-func (c *Consensus) Broadcast(txs []*transaction.Transaction, sig []byte) error {
-	data, err := json.Marshal(txs)
-	if err != nil {
-		return err
-	}
-	for _, addr := range c.UNL {
-		err := sendToNode(addr, data, sig)
-		if err != nil {
-			log.Printf("Failed to send to %s: %v", addr, err)
+func (c *Consensus) Run(ctx context.Context) {
+	ticker := time.NewTicker(3 * time.Second) // Ticker 3 seconds
+	defer ticker.Stop()
+	defer c.server.Stop()
+
+	hasProposal := false
+	var proposedTxs []*transaction.Transaction
+
+	for {
+		select {
+
+		case msg := <-c.server.Receive(): // Condition 1: Nhận được đề xuất động thuận từ bất kỳ validator trong mạng
+
+			// Lặp qua các node liên kết có trong URL
+			// Xác định signature được gửi tới
+			for _, node := range c.UNL {
+				pubKey, err := crypto.PubKeyFromNode(node)
+				if err != nil {
+					continue
+				}
+
+				if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
+
+					// Cần phải phân biệt message nhận được thuộc loại message nào?
+					var txs []*transaction.Transaction
+					if err := json.Unmarshal(msg.Txs, &txs); err != nil {
+						log.Printf("Invalid proposal: %v", err)
+						continue
+					}
+
+					// Kiểm tra các giao dịch có hợp lệ không, nếu hợp lệ thì đưa vào danh sách những giao dịch hợp lệ
+					// của node, lưu ý cần sắp xếp các giao dịch theo thứ tự sequence của account
+					for _, tx := range txs {
+						_ = tx
+					}
+
+					hasProposal = true
+					proposedTxs = txs
+					break
+				}
+
+			}
+
+			// Kiểm tra điều kiện đồng thuận
+			if hasProposal && !c.isConsensing {
+				go c.startConsensus(proposedTxs)
+				hasProposal = false
+				proposedTxs = nil
+			}
+
+		case <-ticker.C: // Condition 2: Ticker 3 second
+
+			// Lấy danh sách các giao dịch đề xuất của validator
+			proposalTxs := c.getProposalTransaction()
+
+			if hasProposal && !c.isConsensing {
+				go c.startConsensus(proposalTxs)
+				hasProposal = false
+				proposedTxs = nil
+			} else if !c.isConsensing && len(proposalTxs) > 0 {
+				go c.startConsensus(proposalTxs)
+			}
 		}
 	}
-	return nil
 }
 
-// ReceiveFromNode nhận candidate set
-func (c *Consensus) ReceiveFromNode(node string) ([]byte, []byte, error) {
-	conn, err := net.DialTimeout("tcp", node, 2*time.Second)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer conn.Close()
+func (c *Consensus) startConsensus([]*transaction.Transaction) {
 
-	data := make([]byte, 1024)
-	n, err := conn.Read(data)
-	if err != nil {
-		return nil, nil, err
-	}
-	var msg struct {
-		Txs []byte `json:"txs"`
-		Sig []byte `json:"sig"`
-	}
-	if err := json.Unmarshal(data[:n], &msg); err != nil {
-		return nil, nil, err
-	}
-	return msg.Txs, msg.Sig, nil
-}
-
-// sendToNode gửi dữ liệu qua TCP
-func sendToNode(addr string, txs, sig []byte) error {
-	conn, err := net.DialTimeout("tcp", addr, 2*time.Second)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	msg := struct {
-		Txs []byte `json:"txs"`
-		Sig []byte `json:"sig"`
-	}{Txs: txs, Sig: sig}
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	_, err = conn.Write(data)
-	return err
 }
 
 func (c *Consensus) getProposalTransaction() []*transaction.Transaction {

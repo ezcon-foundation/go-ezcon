@@ -22,14 +22,11 @@ import (
 	"github.com/ezcon-foundation/go-ezcon/consensus"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
-	"log"
-	"time"
 )
 
 type Node struct {
-	Consensus     *consensus.Consensus
-	RPCServer     *rpc.Server
-	IsInConsensus bool
+	Consensus *consensus.Consensus
+	RPCServer *rpc.Server
 }
 
 func NewNode(cfg *config.Config) (*Node, error) {
@@ -47,6 +44,7 @@ func NewNode(cfg *config.Config) (*Node, error) {
 			cfg.UNL,
 			cfg.NodeID,
 			cfg.PrivKey,
+			cfg.ConsensusPort,
 		),
 	}
 
@@ -57,22 +55,4 @@ func NewNode(cfg *config.Config) (*Node, error) {
 	}
 
 	return node, nil
-}
-
-func (n *Node) RunValidator() {
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if n.IsInConsensus {
-				log.Println("Node is in consensus, skipping...")
-				continue
-			}
-
-			log.Println("Running consensus...")
-
-		}
-	}
 }
