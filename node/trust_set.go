@@ -18,6 +18,7 @@
 package node
 
 import (
+	"github.com/ezcon-foundation/go-ezcon/core/transaction"
 	"log"
 	"net/http"
 )
@@ -36,5 +37,11 @@ func (n *Node) TrustSet(r *http.Request, args *TrustSetRequest, reply *TrustSetR
 
 	log.Println("TrustSet called with args:", args)
 
+	trustSetTx, err := transaction.ParseTransaction(args.RawTx)
+	if err != nil {
+		return err
+	}
+
+	n.Consensus.Transactions = append(n.Consensus.Transactions, &trustSetTx)
 	return nil
 }

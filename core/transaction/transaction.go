@@ -59,6 +59,7 @@ func ParseTransaction(rawTx map[string]interface{}) (Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	switch txTypeValues[txType] {
 	case TxTypeTrustSet:
 		var tx TrustSet

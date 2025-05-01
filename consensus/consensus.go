@@ -85,7 +85,7 @@ func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
 		if err := c.Broadcast(currentTxs, sig); err != nil {
 			log.Printf("Round %d: Broadcast failed: %v", round, err)
 		}
-		//
+
 		for _, node := range c.UNL {
 
 			_ = node
