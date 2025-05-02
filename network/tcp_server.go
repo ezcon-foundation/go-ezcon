@@ -23,7 +23,6 @@ import (
 	"log"
 	"net"
 	"sync"
-	"time"
 )
 
 // Message định nghĩa dữ liệu gửi/nhận qua TCP
@@ -34,9 +33,11 @@ type Message struct {
 
 // TCPServer quản lý server nhận candidate set
 type TCPServer struct {
-	listener net.Listener
-	msgChan  chan Message
-	wg       sync.WaitGroup
+	listener     net.Listener
+	proposalChan chan<- Message
+	voteChan     chan<- Message
+	isConsensing func() bool
+	wg           sync.WaitGroup
 }
 
 // NewTCPServer khởi tạo server
@@ -47,12 +48,15 @@ func NewTCPServer(port string) (*TCPServer, error) {
 	}
 	return &TCPServer{
 		listener: listener,
-		msgChan:  make(chan Message, 100),
 	}, nil
 }
 
-// Start chạy server
-func (s *TCPServer) Start() {
+// Start chạy server TCP
+func (s *TCPServer) Start(isConsensing func() bool, proposalChan, voteChan chan<- Message) {
+	s.isConsensing = isConsensing
+	s.proposalChan = proposalChan
+	s.voteChan = voteChan
+
 	go func() {
 		defer s.listener.Close()
 		for {
@@ -71,12 +75,6 @@ func (s *TCPServer) Start() {
 func (s *TCPServer) Stop() {
 	s.listener.Close()
 	s.wg.Wait()
-	close(s.msgChan)
-}
-
-// Receive trả về channel để nhận message
-func (s *TCPServer) Receive() <-chan Message {
-	return s.msgChan
 }
 
 // handleConnection xử lý kết nối
@@ -97,38 +95,18 @@ func (s *TCPServer) handleConnection(conn net.Conn) {
 		return
 	}
 
-	select {
-	case s.msgChan <- msg:
-	default:
-		log.Printf("Message channel full, dropping message")
+	// Phân loại tin nhắn dựa trên trạng thái đồng thuận
+	if s.isConsensing != nil && s.isConsensing() {
+		select {
+		case s.voteChan <- msg:
+		default:
+			log.Printf("Vote channel full, dropping message")
+		}
+	} else {
+		select {
+		case s.proposalChan <- msg:
+		default:
+			log.Printf("Proposal channel full, dropping message")
+		}
 	}
-}
-
-// TCPClient gửi candidate set đến node
-type TCPClient struct {
-	timeout time.Duration
-}
-
-// NewTCPClient khởi tạo client
-func NewTCPClient(timeout time.Duration) *TCPClient {
-	return &TCPClient{timeout: timeout}
-}
-
-// Send gửi message đến addr
-func (c *TCPClient) Send(addr string, msg Message) error {
-	conn, err := net.DialTimeout("tcp", addr, c.timeout)
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %v", addr, err)
-	}
-	defer conn.Close()
-
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	_, err = conn.Write(data)
-	if err != nil {
-		return fmt.Errorf("failed to send to %s: %v", addr, err)
-	}
-	return nil
 }

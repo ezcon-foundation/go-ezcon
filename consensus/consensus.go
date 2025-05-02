@@ -42,6 +42,9 @@ type Consensus struct {
 
 	isConsensing bool
 	mutex        sync.Mutex
+
+	proposalChan <-chan network.Message // Kênh cho đề xuất
+	voteChan     <-chan network.Message // Kênh cho phiếu bầu
 }
 
 func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *Consensus {
@@ -55,38 +58,88 @@ func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *
 	// create tcp client
 	client := network.NewTCPClient(2 * time.Second)
 
+	// khởi tạo channel, giới hạn 1000 giao dịch
+	proposalChan := make(chan network.Message, 100)
+	voteChan := make(chan network.Message, 100)
+
 	// init consensus instance
 	c := &Consensus{
-		UNL:       unl,
-		NodeID:    nodeID,
-		PrivKey:   privKey,
-		Threshold: 0.8,
-		MaxRounds: 5,
-		server:    server,
-		client:    client,
+		UNL:          unl,
+		NodeID:       nodeID,
+		PrivKey:      privKey,
+		Threshold:    0.8,
+		MaxRounds:    5,
+		server:       server,
+		client:       client,
+		proposalChan: proposalChan,
+		voteChan:     voteChan,
 	}
 
 	// start tpc server
-	c.server.Start()
+	c.server.Start(c.IsConsensing, proposalChan, voteChan)
 
 	return c
 }
 
 // RunConsensus runs the consensus algorithm
-/*
- * Step 1: Propose transactions
- * Step 2: Sign the transactions
- * Step 3: Broadcast the transactions to UNL
- * Step 4: Collect votes from UNL
- * Step 5: Check if the votes reach the threshold
- * Step 6: If yes, commit the transactions to the ledger
- * Step 7: If no, repeat from step 1
- * Step 8: If the maximum rounds are reached, return an error
- * Step 9: If the transactions are committed, return the transactions
- */
 func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
 
 	return nil, nil
+}
+
+func (c *Consensus) handleVote(msg network.Message) {
+
+}
+
+func (c *Consensus) handleProposal(msg network.Message) {
+	hasProposal := false
+	var proposedTxs []*transaction.Transaction
+
+	// Lặp qua các node có trong UNL, xác định giao dịch được gửi đến
+	for _, node := range c.UNL {
+		pubKey, err := crypto.PubKeyFromNode(node)
+		if err != nil {
+			continue
+		}
+
+		if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
+
+			// Cần phải phân biệt message nhận được thuộc loại message nào?
+			var txs []*transaction.Transaction
+			if err := json.Unmarshal(msg.Txs, &txs); err != nil {
+				log.Printf("Invalid proposal: %v", err)
+				continue
+			}
+
+			// Kiểm tra các giao dịch có hợp lệ không, nếu hợp lệ thì đưa vào danh sách những giao dịch hợp lệ
+			// của node, lưu ý cần sắp xếp các giao dịch theo thứ tự sequence của account
+			for _, tx := range txs {
+
+				// todo: kiểm tra tính hợp lệ của tx
+				proposedTxs = append(proposedTxs, tx)
+			}
+
+			hasProposal = true
+			break
+		}
+	}
+
+	// Nếu giao dịch gửi đến không thuộc bất kỳ một node nào đã biết, thì không xử lý
+	if !hasProposal {
+		return
+	}
+
+	// Kiểm tra điều kiện đồng thuận
+	if !c.isConsensing {
+
+		// khởi động trạng thái đồng thuận của node
+		c.isConsensing = true
+
+		go c.startConsensus(proposedTxs)
+
+		hasProposal = false
+		proposedTxs = nil
+	}
 }
 
 func (c *Consensus) Run(ctx context.Context) {
@@ -94,63 +147,19 @@ func (c *Consensus) Run(ctx context.Context) {
 	defer ticker.Stop()
 	defer c.server.Stop()
 
-	hasProposal := false
-	var proposedTxs []*transaction.Transaction
-
 	for {
 		select {
 
-		case msg := <-c.server.Receive(): // Condition 1: Nhận được đề xuất động thuận từ bất kỳ validator trong mạng
-
-			// Lặp qua các node liên kết có trong URL
-			// Xác định signature được gửi tới
-			for _, node := range c.UNL {
-				pubKey, err := crypto.PubKeyFromNode(node)
-				if err != nil {
-					continue
-				}
-
-				if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
-
-					// Cần phải phân biệt message nhận được thuộc loại message nào?
-					var txs []*transaction.Transaction
-					if err := json.Unmarshal(msg.Txs, &txs); err != nil {
-						log.Printf("Invalid proposal: %v", err)
-						continue
-					}
-
-					// Kiểm tra các giao dịch có hợp lệ không, nếu hợp lệ thì đưa vào danh sách những giao dịch hợp lệ
-					// của node, lưu ý cần sắp xếp các giao dịch theo thứ tự sequence của account
-					for _, tx := range txs {
-						_ = tx
-					}
-
-					hasProposal = true
-					proposedTxs = txs
-					break
-				}
-
-			}
-
-			// Kiểm tra điều kiện đồng thuận
-			if hasProposal && !c.isConsensing {
-				go c.startConsensus(proposedTxs)
-				hasProposal = false
-				proposedTxs = nil
-			}
-
+		case msg := <-c.proposalChan: // Condition 1: Nhận được đề xuất động thuận từ bất kỳ validator trong mạng
+			c.mutex.Lock()
+			c.handleProposal(msg)
+			c.mutex.Unlock()
+		case msg := <-c.voteChan:
+			c.mutex.Lock()
+			c.handleVote(msg)
+			c.mutex.Unlock()
 		case <-ticker.C: // Condition 2: Ticker 3 second
 
-			// Lấy danh sách các giao dịch đề xuất của validator
-			proposalTxs := c.getProposalTransaction()
-
-			if hasProposal && !c.isConsensing {
-				go c.startConsensus(proposalTxs)
-				hasProposal = false
-				proposedTxs = nil
-			} else if !c.isConsensing && len(proposalTxs) > 0 {
-				go c.startConsensus(proposalTxs)
-			}
 		}
 	}
 }
@@ -163,4 +172,11 @@ func (c *Consensus) getProposalTransaction() []*transaction.Transaction {
 
 	// todo: choose some transaction
 	return c.Transactions
+}
+
+// IsConsensing trả về trạng thái đồng thuận
+func (c *Consensus) IsConsensing() bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	return c.isConsensing
 }
