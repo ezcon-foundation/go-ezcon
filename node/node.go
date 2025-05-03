@@ -18,9 +18,9 @@
 package node
 
 import (
-	"context"
 	"github.com/ezcon-foundation/go-ezcon/config"
 	"github.com/ezcon-foundation/go-ezcon/consensus"
+	"github.com/ezcon-foundation/go-ezcon/node/tcp"
 	"github.com/gorilla/rpc/v2"
 	"github.com/gorilla/rpc/v2/json2"
 )
@@ -28,6 +28,9 @@ import (
 type Node struct {
 	Consensus *consensus.Consensus
 	RPCServer *rpc.Server
+
+	proposalChan <-chan tcp.Message // Kênh nhận các message dạng đề xuất
+	voteChan     <-chan tcp.Message // Kênh nhận các message dạn
 }
 
 func NewNode(cfg *config.Config) (*Node, error) {
@@ -38,15 +41,17 @@ func NewNode(cfg *config.Config) (*Node, error) {
 	// regis codec for rpc server
 	s.RegisterCodec(json2.NewCodec(), "application/json")
 
+	c := consensus.NewConsensus(
+		cfg.UNL,
+		cfg.NodeID,
+		cfg.PrivKey,
+		cfg.ConsensusPort,
+	)
+
 	// init node parameter
 	node := &Node{
 		RPCServer: s,
-		Consensus: consensus.NewConsensus(
-			cfg.UNL,
-			cfg.NodeID,
-			cfg.PrivKey,
-			cfg.ConsensusPort,
-		),
+		Consensus: c,
 	}
 
 	// regis server under name 'ezcon'
@@ -56,7 +61,7 @@ func NewNode(cfg *config.Config) (*Node, error) {
 	}
 
 	// bắt đầu khởi chạy đồng thuận
-	go node.Consensus.Run(context.Background())
+	go c.RunEngine()
 
 	return node, nil
 }

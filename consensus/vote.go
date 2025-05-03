@@ -17,8 +17,10 @@
 
 package consensus
 
-import "github.com/ezcon-foundation/go-ezcon/network"
+import (
+	"github.com/ezcon-foundation/go-ezcon/node/tcp"
+)
 
-func (c *Consensus) handleVote(msg network.Message) {
+func (c *Consensus) handleVote(msg tcp.Message) {
 
 }

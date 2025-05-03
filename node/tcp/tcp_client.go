@@ -15,47 +15,40 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package consensus
+package tcp
 
 import (
 	"encoding/json"
-	"github.com/ezcon-foundation/go-ezcon/core/transaction"
-	"github.com/ezcon-foundation/go-ezcon/node/tcp"
-	"log"
-	"sync"
+	"fmt"
+	"net"
+	"time"
 )
 
-// Broadcast gửi candidate set đến UNL
-func (c *Consensus) Broadcast(txs []*transaction.Transaction, sig []byte) error {
+// TCPClient gửi candidate set đến node
+type TCPClient struct {
+	timeout time.Duration
+}
 
-	// json marshal all transaction
-	data, err := json.Marshal(txs)
+// NewTCPClient khởi tạo client
+func NewTCPClient(timeout time.Duration) *TCPClient {
+	return &TCPClient{timeout: timeout}
+}
+
+// Send gửi message đến addr
+func (c *TCPClient) Send(addr string, msg Message) error {
+	conn, err := net.DialTimeout("tcp", addr, c.timeout)
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s: %v", addr, err)
+	}
+	defer conn.Close()
+
+	data, err := json.Marshal(msg)
 	if err != nil {
 		return err
 	}
-
-	// create message
-	msg := tcp.Message{Txs: data, Sig: sig}
-
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(c.UNL))
-
-	// forloop all UNL and send via tcp
-	for _, addr := range c.UNL {
-		wg.Add(1)
-		go func(addr string) {
-			defer wg.Done()
-			if err := c.client.Send(addr, msg); err != nil {
-				errChan <- err
-			}
-		}(addr)
+	_, err = conn.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to send to %s: %v", addr, err)
 	}
-
-	wg.Wait()
-	close(errChan)
-	for err := range errChan {
-		log.Printf("Broadcast error: %v", err)
-	}
-
 	return nil
 }

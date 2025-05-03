@@ -70,7 +70,6 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-
 			http.Handle("/rpc", node.RPCServer)
 
 			log.Printf("Starting RPC server on :%s", "3000")

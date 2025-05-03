@@ -16,3 +16,46 @@
  */
 
 package consensus
+
+import (
+	"log"
+	"time"
+)
+
+func (c *Consensus) RunEngine() {
+	ticker := time.NewTicker(3 * time.Second) // Ticker 3 seconds
+	defer ticker.Stop()
+	defer c.server.Stop()
+
+	for {
+		select {
+		case msg := <-c.proposalChan:
+			c.mutex.Lock()
+			c.handleProposal(msg)
+			c.mutex.Unlock()
+		case msg := <-c.voteChan:
+			c.mutex.Lock()
+			c.handleVote(msg)
+			c.mutex.Unlock()
+		case <-ticker.C:
+			c.mutex.Lock()
+
+			log.Println("New Proposal...")
+			// Lấy đề xuất các giao dịch
+			proposedTxs := c.getProposalTransaction()
+
+			// Lưu vào danh sách các giao dịch đang đề xuất
+			c.saveProposalTransaction(proposedTxs)
+
+			// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
+			err := c.Broadcast(proposedTxs, []byte{})
+			if err != nil {
+				continue
+			}
+
+			c.isConsensing = true
+
+			c.mutex.Unlock()
+		}
+	}
+}

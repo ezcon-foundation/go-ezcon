@@ -15,40 +15,8 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package network
+package node
 
-import (
-	"encoding/json"
-	"fmt"
-	"net"
-	"time"
-)
+func NewRPCServer() {
 
-// TCPClient gửi candidate set đến node
-type TCPClient struct {
-	timeout time.Duration
-}
-
-// NewTCPClient khởi tạo client
-func NewTCPClient(timeout time.Duration) *TCPClient {
-	return &TCPClient{timeout: timeout}
-}
-
-// Send gửi message đến addr
-func (c *TCPClient) Send(addr string, msg Message) error {
-	conn, err := net.DialTimeout("tcp", addr, c.timeout)
-	if err != nil {
-		return fmt.Errorf("failed to connect to %s: %v", addr, err)
-	}
-	defer conn.Close()
-
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	_, err = conn.Write(data)
-	if err != nil {
-		return fmt.Errorf("failed to send to %s: %v", addr, err)
-	}
-	return nil
 }

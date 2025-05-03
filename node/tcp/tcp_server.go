@@ -15,14 +15,13 @@
  * along with the go-ezcon library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-package network
+package tcp
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
-	"sync"
 )
 
 // Message định nghĩa dữ liệu gửi/nhận qua TCP
@@ -41,7 +40,6 @@ type TCPServer struct {
 	proposalChan chan<- Message
 	voteChan     chan<- Message
 	isConsensing func() bool
-	wg           sync.WaitGroup
 }
 
 // NewTCPServer khởi tạo server
@@ -72,23 +70,21 @@ func (s *TCPServer) Start(isConsensing func() bool, proposalChan, voteChan chan<
 			log.Printf("TCP accept error: %v", err)
 			return
 		}
-		s.wg.Add(1)
-		go s.handleConnection(conn)
+
+		s.handleConnection(conn)
 	}
 }
 
 // Stop đóng server
 func (s *TCPServer) Stop() {
 	s.listener.Close()
-	s.wg.Wait()
 }
 
 // handleConnection xử lý kết nối
 func (s *TCPServer) handleConnection(conn net.Conn) {
 	defer conn.Close()
-	defer s.wg.Done()
 
-	data := make([]byte, 4096)
+	var data []byte
 	n, err := conn.Read(data)
 	if err != nil {
 		log.Printf("TCP read error: %v", err)

@@ -18,9 +18,8 @@
 package consensus
 
 import (
-	"context"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
-	"github.com/ezcon-foundation/go-ezcon/network"
+	tpc2 "github.com/ezcon-foundation/go-ezcon/node/tcp"
 	"sync"
 	"time"
 )
@@ -36,30 +35,30 @@ type Consensus struct {
 	MaxRounds int     // 5
 
 	// tcp server
-	server *network.TCPServer
-	client *network.TCPClient
+	server *tpc2.TCPServer
+	client *tpc2.TCPClient
 
 	isConsensing bool
 	mutex        sync.Mutex
 
-	proposalChan <-chan network.Message // Kênh cho đề xuất
-	voteChan     <-chan network.Message // Kênh cho phiếu bầu
+	proposalChan <-chan tpc2.Message // Kênh cho đề xuất
+	voteChan     <-chan tpc2.Message // Kênh cho phiếu bầu
 }
 
 func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *Consensus {
 
-	// create tpc server
-	server, err := network.NewTCPServer(tpcPort)
+	// create tcp server
+	server, err := tpc2.NewTCPServer(tpcPort)
 	if err != nil {
 		return nil
 	}
 
 	// create tcp client
-	client := network.NewTCPClient(2 * time.Second)
+	client := tpc2.NewTCPClient(2 * time.Second)
 
 	// khởi tạo channel, giới hạn 100 giao dịch
-	proposalChan := make(chan network.Message, 100)
-	voteChan := make(chan network.Message, 100)
+	proposalChan := make(chan tpc2.Message, 100)
+	voteChan := make(chan tpc2.Message, 100)
 
 	// init consensus instance
 	c := &Consensus{
@@ -74,47 +73,10 @@ func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *
 		voteChan:     voteChan,
 	}
 
-	// start tpc server
+	// start tcp server
 	go c.server.Start(c.IsConsensing, proposalChan, voteChan)
 
 	return c
-}
-
-func (c *Consensus) Run(ctx context.Context) {
-	ticker := time.NewTicker(3 * time.Second) // Ticker 3 seconds
-	defer ticker.Stop()
-	defer c.server.Stop()
-
-	for {
-		select {
-		case msg := <-c.proposalChan:
-			c.mutex.Lock()
-			c.handleProposal(msg)
-			c.mutex.Unlock()
-		case msg := <-c.voteChan:
-			c.mutex.Lock()
-			c.handleVote(msg)
-			c.mutex.Unlock()
-		case <-ticker.C:
-			c.mutex.Lock()
-
-			// Lấy đề xuất các giao dịch
-			proposedTxs := c.getProposalTransaction()
-
-			// Lưu vào danh sách các giao dịch đang đề xuất
-			c.saveProposalTransaction(proposedTxs)
-
-			// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
-			err := c.Broadcast(proposedTxs, []byte{})
-			if err != nil {
-				continue
-			}
-
-			c.isConsensing = true
-
-			c.mutex.Unlock()
-		}
-	}
 }
 
 func (c *Consensus) getProposalTransaction() []*transaction.Transaction {

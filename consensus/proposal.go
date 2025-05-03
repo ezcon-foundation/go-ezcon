@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
 	"github.com/ezcon-foundation/go-ezcon/crypto"
-	"github.com/ezcon-foundation/go-ezcon/network"
+	"github.com/ezcon-foundation/go-ezcon/node/tcp"
 	"log"
 )
 
@@ -31,7 +31,7 @@ type ProposalMessage struct {
 }
 
 // handleProposal sẽ tập trung vào việc xử lý các giao dịch đề xuất trong trạng thái nghỉ của validator
-func (c *Consensus) handleProposal(msg network.Message) {
+func (c *Consensus) handleProposal(msg tcp.Message) {
 	hasProposal := false
 	var proposedTxs []*transaction.Transaction
 
