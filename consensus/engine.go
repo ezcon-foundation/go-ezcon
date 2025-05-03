@@ -38,6 +38,12 @@ func (c *Consensus) RunEngine() {
 			c.handleVote(msg)
 			c.mutex.Unlock()
 		case <-ticker.C:
+
+			// nếu node đang trong qua trình đồng thuận, thì không thực hiện proposal mới
+			if c.isConsensing {
+				continue
+			}
+
 			c.mutex.Lock()
 
 			log.Println("New Proposal...")
@@ -47,9 +53,15 @@ func (c *Consensus) RunEngine() {
 			// Lưu vào danh sách các giao dịch đang đề xuất
 			c.saveProposalTransaction(proposedTxs)
 
+			log.Println(c.UNL)
+
+			// todo: Cần ký proposal transaction
+
 			// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
 			err := c.Broadcast(proposedTxs, []byte{})
 			if err != nil {
+				log.Printf("broadcast error", err)
+				c.mutex.Unlock()
 				continue
 			}
 
