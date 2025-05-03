@@ -27,7 +27,11 @@ import (
 
 // Message định nghĩa dữ liệu gửi/nhận qua TCP
 type Message struct {
+
+	// Danh sách các giao dịch
 	Txs []byte `json:"txs"`
+
+	// Chữ ký của node
 	Sig []byte `json:"sig"`
 }
 
@@ -53,22 +57,24 @@ func NewTCPServer(port string) (*TCPServer, error) {
 
 // Start chạy server TCP
 func (s *TCPServer) Start(isConsensing func() bool, proposalChan, voteChan chan<- Message) {
+
+	log.Printf("Start Consensus TCP")
+
 	s.isConsensing = isConsensing
 	s.proposalChan = proposalChan
 	s.voteChan = voteChan
 
-	go func() {
-		defer s.listener.Close()
-		for {
-			conn, err := s.listener.Accept()
-			if err != nil {
-				log.Printf("TCP accept error: %v", err)
-				return
-			}
-			s.wg.Add(1)
-			go s.handleConnection(conn)
+	defer s.listener.Close()
+
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			log.Printf("TCP accept error: %v", err)
+			return
 		}
-	}()
+		s.wg.Add(1)
+		go s.handleConnection(conn)
+	}
 }
 
 // Stop đóng server

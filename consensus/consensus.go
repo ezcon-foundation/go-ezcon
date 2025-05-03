@@ -75,7 +75,7 @@ func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *
 	}
 
 	// start tpc server
-	c.server.Start(c.IsConsensing, proposalChan, voteChan)
+	go c.server.Start(c.IsConsensing, proposalChan, voteChan)
 
 	return c
 }
@@ -87,7 +87,6 @@ func (c *Consensus) Run(ctx context.Context) {
 
 	for {
 		select {
-
 		case msg := <-c.proposalChan:
 			c.mutex.Lock()
 			c.handleProposal(msg)
@@ -111,17 +110,11 @@ func (c *Consensus) Run(ctx context.Context) {
 				continue
 			}
 
-			go c.startConsensus(proposedTxs)
-
 			c.isConsensing = true
 
 			c.mutex.Unlock()
 		}
 	}
-}
-
-func (c *Consensus) startConsensus([]*transaction.Transaction) {
-
 }
 
 func (c *Consensus) getProposalTransaction() []*transaction.Transaction {

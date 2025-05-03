@@ -25,6 +25,11 @@ import (
 	"log"
 )
 
+type ProposalMessage struct {
+	Txs     []*transaction.Transaction `json:"txs"`
+	NumVote int                        `json:"num_vote"`
+}
+
 // handleProposal sẽ tập trung vào việc xử lý các giao dịch đề xuất trong trạng thái nghỉ của validator
 func (c *Consensus) handleProposal(msg network.Message) {
 	hasProposal := false
@@ -41,15 +46,15 @@ func (c *Consensus) handleProposal(msg network.Message) {
 		if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
 
 			// Cần phải phân biệt message nhận được thuộc loại message nào?
-			var txs []*transaction.Transaction
-			if err := json.Unmarshal(msg.Txs, &txs); err != nil {
+			var proposalMessage ProposalMessage
+			if err := json.Unmarshal(msg.Txs, &proposalMessage); err != nil {
 				log.Printf("Invalid proposal: %v", err)
 				continue
 			}
 
 			// Kiểm tra các giao dịch có hợp lệ không, nếu hợp lệ thì đưa vào danh sách những giao dịch hợp lệ
 			// của node, lưu ý cần sắp xếp các giao dịch theo thứ tự sequence của account
-			for _, tx := range txs {
+			for _, tx := range proposalMessage.Txs {
 
 				// todo: kiểm tra tính hợp lệ của tx
 				proposedTxs = append(proposedTxs, tx)
@@ -67,8 +72,6 @@ func (c *Consensus) handleProposal(msg network.Message) {
 
 	// khởi động trạng thái đồng thuận của node
 	c.isConsensing = true
-
-	go c.startConsensus(proposedTxs)
 
 	hasProposal = false
 }
