@@ -19,11 +19,8 @@ package consensus
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
-	"github.com/ezcon-foundation/go-ezcon/crypto"
 	"github.com/ezcon-foundation/go-ezcon/network"
-	"log"
 	"sync"
 	"time"
 )
@@ -83,67 +80,6 @@ func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *
 	return c
 }
 
-// RunConsensus runs the consensus algorithm
-func (c *Consensus) RunConsensus() ([]transaction.Transaction, error) {
-
-	return nil, nil
-}
-
-func (c *Consensus) handleVote(msg network.Message) {
-
-}
-
-func (c *Consensus) handleProposal(msg network.Message) {
-	hasProposal := false
-	var proposedTxs []*transaction.Transaction
-
-	// Lặp qua các node có trong UNL, xác định giao dịch được gửi đến
-	for _, node := range c.UNL {
-		pubKey, err := crypto.PubKeyFromNode(node)
-		if err != nil {
-			continue
-		}
-
-		if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
-
-			// Cần phải phân biệt message nhận được thuộc loại message nào?
-			var txs []*transaction.Transaction
-			if err := json.Unmarshal(msg.Txs, &txs); err != nil {
-				log.Printf("Invalid proposal: %v", err)
-				continue
-			}
-
-			// Kiểm tra các giao dịch có hợp lệ không, nếu hợp lệ thì đưa vào danh sách những giao dịch hợp lệ
-			// của node, lưu ý cần sắp xếp các giao dịch theo thứ tự sequence của account
-			for _, tx := range txs {
-
-				// todo: kiểm tra tính hợp lệ của tx
-				proposedTxs = append(proposedTxs, tx)
-			}
-
-			hasProposal = true
-			break
-		}
-	}
-
-	// Nếu giao dịch gửi đến không thuộc bất kỳ một node nào đã biết, thì không xử lý
-	if !hasProposal {
-		return
-	}
-
-	// Kiểm tra điều kiện đồng thuận
-	if !c.isConsensing {
-
-		// khởi động trạng thái đồng thuận của node
-		c.isConsensing = true
-
-		go c.startConsensus(proposedTxs)
-
-		hasProposal = false
-		proposedTxs = nil
-	}
-}
-
 func (c *Consensus) Run(ctx context.Context) {
 	ticker := time.NewTicker(3 * time.Second) // Ticker 3 seconds
 	defer ticker.Stop()
@@ -178,6 +114,7 @@ func (c *Consensus) Run(ctx context.Context) {
 			go c.startConsensus(proposedTxs)
 
 			c.isConsensing = true
+
 			c.mutex.Unlock()
 		}
 	}
@@ -189,7 +126,7 @@ func (c *Consensus) startConsensus([]*transaction.Transaction) {
 
 func (c *Consensus) getProposalTransaction() []*transaction.Transaction {
 
-	// todo: choose some transaction
+	// todo: choose available transaction for proposal
 	return c.Transactions
 }
 
