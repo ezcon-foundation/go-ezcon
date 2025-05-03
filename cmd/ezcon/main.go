@@ -33,11 +33,11 @@ var (
 		Usage: "TOML configuration file",
 	}
 	NodeIDFlag = &cli.StringFlag{
-		Name:  "nodeid",
+		Name:  "node_id",
 		Usage: "Node identifier",
 	}
 	PrivKeyFlag = &cli.StringFlag{
-		Name:  "privkey",
+		Name:  "private_key",
 		Usage: "Private key for signing",
 	}
 	UNLFlag = &cli.StringSliceFlag{
@@ -45,18 +45,31 @@ var (
 		Usage: "List of trusted validator nodes",
 	}
 	LedgerPathFlag = &cli.StringFlag{
-		Name:  "ledgerpath",
+		Name:  "ledger_path",
 		Usage: "Path to ledger file",
 	}
 	RPCPortFlag = &cli.StringFlag{
-		Name:  "rpcport",
+		Name:  "rpc_port",
 		Usage: "RPC server port",
+	}
+	ConsensusPortFlag = &cli.StringFlag{
+		Name:  "consensus_port",
+		Usage: "Consensus TCP server port",
 	}
 )
 
 func main() {
 
 	app := &cli.App{
+		Flags: []cli.Flag{
+			ConfigFlag,
+			NodeIDFlag,
+			PrivKeyFlag,
+			UNLFlag,
+			LedgerPathFlag,
+			RPCPortFlag,
+			ConsensusPortFlag,
+		},
 		Name: "ezcon",
 		Action: func(c *cli.Context) error {
 
@@ -72,7 +85,7 @@ func main() {
 			}
 			http.Handle("/rpc", node.RPCServer)
 
-			log.Printf("Starting RPC server on :%s", "3000")
+			log.Printf("Starting RPC server on :%s", cfg.RPCPort)
 
 			return http.ListenAndServe(fmt.Sprintf(":%v", cfg.RPCPort), nil)
 		},
