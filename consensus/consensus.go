@@ -58,7 +58,7 @@ func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *
 	// create tcp client
 	client := network.NewTCPClient(2 * time.Second)
 
-	// khởi tạo channel, giới hạn 1000 giao dịch
+	// khởi tạo channel, giới hạn 100 giao dịch
 	proposalChan := make(chan network.Message, 100)
 	voteChan := make(chan network.Message, 100)
 
@@ -150,7 +150,7 @@ func (c *Consensus) Run(ctx context.Context) {
 	for {
 		select {
 
-		case msg := <-c.proposalChan: // Condition 1: Nhận được đề xuất động thuận từ bất kỳ validator trong mạng
+		case msg := <-c.proposalChan:
 			c.mutex.Lock()
 			c.handleProposal(msg)
 			c.mutex.Unlock()
@@ -158,8 +158,20 @@ func (c *Consensus) Run(ctx context.Context) {
 			c.mutex.Lock()
 			c.handleVote(msg)
 			c.mutex.Unlock()
-		case <-ticker.C: // Condition 2: Ticker 3 second
+		case <-ticker.C:
+			c.mutex.Lock()
 
+			proposedTxs := c.getProposalTransaction()
+
+			err := c.Broadcast(proposedTxs, []byte{})
+			if err != nil {
+				continue
+			}
+
+			go c.startConsensus(proposedTxs)
+
+			c.isConsensing = true
+			c.mutex.Unlock()
 		}
 	}
 }

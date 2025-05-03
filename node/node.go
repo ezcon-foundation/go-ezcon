@@ -18,6 +18,7 @@
 package node
 
 import (
+	"context"
 	"github.com/ezcon-foundation/go-ezcon/config"
 	"github.com/ezcon-foundation/go-ezcon/consensus"
 	"github.com/gorilla/rpc/v2"
@@ -53,6 +54,9 @@ func NewNode(cfg *config.Config) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// bắt đầu khởi chạy đồng thuận
+	go node.Consensus.Run(context.Background())
 
 	return node, nil
 }

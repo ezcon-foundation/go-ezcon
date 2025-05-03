@@ -95,7 +95,7 @@ func (s *TCPServer) handleConnection(conn net.Conn) {
 		return
 	}
 
-	// Phân loại tin nhắn dựa trên trạng thái đồng thuận
+	// Phân loại message dựa trên trạng thái đồng thuận
 	if s.isConsensing != nil && s.isConsensing() {
 		select {
 		case s.voteChan <- msg:

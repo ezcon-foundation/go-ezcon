@@ -26,7 +26,7 @@ import (
 )
 
 // Broadcast gửi candidate set đến UNL
-func (c *Consensus) Broadcast(txs []transaction.Transaction, sig []byte) error {
+func (c *Consensus) Broadcast(txs []*transaction.Transaction, sig []byte) error {
 
 	// json marshal all transaction
 	data, err := json.Marshal(txs)
