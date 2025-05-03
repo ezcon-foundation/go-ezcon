@@ -29,12 +29,14 @@ import (
 )
 
 type Consensus struct {
-	Transactions []*transaction.Transaction
-	UNL          []string
-	NodeID       string
-	PrivKey      []byte
-	Threshold    float64 // 0.8
-	MaxRounds    int     // 5
+	Transactions        []*transaction.Transaction
+	proposalTransaction []*transaction.Transaction
+
+	UNL       []string
+	NodeID    string
+	PrivKey   []byte
+	Threshold float64 // 0.8
+	MaxRounds int     // 5
 
 	// tcp server
 	server *network.TCPServer
@@ -161,8 +163,13 @@ func (c *Consensus) Run(ctx context.Context) {
 		case <-ticker.C:
 			c.mutex.Lock()
 
+			// Lấy đề xuất các giao dịch
 			proposedTxs := c.getProposalTransaction()
 
+			// Lưu vào danh sách các giao dịch đang đề xuất
+			c.saveProposalTransaction(proposedTxs)
+
+			// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
 			err := c.Broadcast(proposedTxs, []byte{})
 			if err != nil {
 				continue
@@ -184,6 +191,13 @@ func (c *Consensus) getProposalTransaction() []*transaction.Transaction {
 
 	// todo: choose some transaction
 	return c.Transactions
+}
+
+func (c *Consensus) saveProposalTransaction(txs []*transaction.Transaction) {
+
+	for _, tx := range txs {
+		c.proposalTransaction = append(c.proposalTransaction, tx)
+	}
 }
 
 // IsConsensing trả về trạng thái đồng thuận
