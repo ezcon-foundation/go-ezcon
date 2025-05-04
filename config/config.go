@@ -30,6 +30,7 @@ type Config struct {
 	NodeID        string   `toml:"node_id"`
 	PrivKey       []byte   `toml:"private_key"`
 	UNL           []string `toml:"unl"`
+	UNLPublicKey  []string `toml:"unl_public_key"`
 	LedgerPath    string   `toml:"ledger_path"`
 	RPCPort       string   `toml:"rpc_port"`
 	ConsensusPort string   `toml:"consensus_port"`
@@ -51,6 +52,7 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 			NodeID        string   `toml:"node_id"`
 			PrivKey       string   `toml:"private_key"`
 			UNL           []string `toml:"unl"`
+			UNLPublicKey  []string `toml:"unl_public_key"`
 			LedgerPath    string   `toml:"ledger_path"`
 			RPCPort       string   `toml:"rpc_port"`
 			ConsensusPort string   `toml:"consensus_port"`
@@ -71,33 +73,10 @@ func LoadConfig(ctx *cli.Context) (*Config, error) {
 		}
 
 		cfg.UNL = tomlCfg.UNL
+		cfg.UNLPublicKey = tomlCfg.UNLPublicKey
 		cfg.LedgerPath = tomlCfg.LedgerPath
 		cfg.RPCPort = tomlCfg.RPCPort
 		cfg.ConsensusPort = tomlCfg.ConsensusPort
-	}
-
-	// Áp dụng flags từ CLI
-	if ctx.IsSet("node_id") {
-		cfg.NodeID = ctx.String("node_id")
-	}
-	if ctx.IsSet("private_key") {
-		privKeyBytes, err := hex.DecodeString(ctx.String("private_key"))
-		if err != nil || len(privKeyBytes) != 32 {
-			return nil, errors.New("invalid hex private key in CLI")
-		}
-		cfg.PrivKey = privKeyBytes
-	}
-	if ctx.IsSet("unl") {
-		cfg.UNL = ctx.StringSlice("unl")
-	}
-	if ctx.IsSet("ledger_path") {
-		cfg.LedgerPath = ctx.String("ledger_path")
-	}
-	if ctx.IsSet("rpc_port") {
-		cfg.RPCPort = ctx.String("rpc_port")
-	}
-	if ctx.IsSet("consensus_port") {
-		cfg.ConsensusPort = ctx.String("consensus_port")
 	}
 
 	return cfg, nil

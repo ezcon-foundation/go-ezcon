@@ -18,6 +18,8 @@
 package consensus
 
 import (
+	"encoding/json"
+	"github.com/ezcon-foundation/go-ezcon/crypto"
 	"log"
 	"time"
 )
@@ -30,44 +32,68 @@ func (c *Consensus) RunEngine() {
 	for {
 		select {
 		case msg := <-c.proposalChan:
-			c.mutex.Lock()
-			c.handleProposal(msg)
-			c.mutex.Unlock()
+
+			go func() {
+				c.mutex.Lock()
+				defer c.mutex.Unlock()
+
+				// xử lý msg trong giai đoạn trạng thái engine chưa bắt đầu quá trình đồng thuận
+				c.handleProposal(msg)
+			}()
+
 		case msg := <-c.voteChan:
-			c.mutex.Lock()
-			c.handleVote(msg)
-			c.mutex.Unlock()
+
+			go func() {
+				c.mutex.Lock()
+				defer c.mutex.Unlock()
+
+				// xử lý msg trong giai đoạn đang đồng thuận
+				c.handleVote(msg)
+			}()
 		case <-ticker.C:
 
-			// nếu node đang trong qua trình đồng thuận, thì không thực hiện proposal mới
-			if c.isConsensing {
-				continue
-			}
+			go func() {
+				c.mutex.Lock()
+				defer c.mutex.Unlock()
 
-			c.mutex.Lock()
+				// Nếu trạng thái engine đang đồng thuận, thì không gửi consensus
+				if c.isConsensing {
+					return
+				}
 
-			log.Println("New Proposal...")
-			// Lấy đề xuất các giao dịch
-			proposedTxs := c.getProposalTransaction()
+				log.Println("Start send proposal transaction ...")
 
-			// Lưu vào danh sách các giao dịch đang đề xuất
-			c.saveProposalTransaction(proposedTxs)
+				// Lấy đề xuất các giao dịch
+				proposedTxs := c.getProposalTransaction()
 
-			log.Println(c.UNL)
+				// Lưu vào danh sách các giao dịch đang đề xuất
+				c.saveProposalTransaction(proposedTxs)
 
-			// todo: Cần ký proposal transaction
+				// marshal data
+				data, err := json.Marshal(proposedTxs)
+				if err != nil {
+					log.Println("can not marshal proposal txs", err)
+					return
+				}
 
-			// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
-			err := c.Broadcast(proposedTxs, []byte{})
-			if err != nil {
-				log.Printf("broadcast error", err)
-				c.mutex.Unlock()
-				continue
-			}
+				// ký proposal transaction
+				signature, err := crypto.Sign(data, c.PrivKey)
+				if err != nil {
+					log.Println("can not sign data", err)
+					return
+				}
 
-			c.isConsensing = true
+				// Chuyển tiếp các giao dịch đề xuất cho các node trong danh sách UNL
+				err = c.Broadcast(proposedTxs, signature)
+				if err != nil {
+					return
+				}
 
-			c.mutex.Unlock()
+				c.isConsensing = true
+
+				log.Println("Start consensus...")
+			}()
+
 		}
 	}
 }

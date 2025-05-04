@@ -43,6 +43,7 @@ func NewNode(cfg *config.Config) (*Node, error) {
 
 	c := consensus.NewConsensus(
 		cfg.UNL,
+		cfg.UNLPublicKey,
 		cfg.NodeID,
 		cfg.PrivKey,
 		cfg.ConsensusPort,

@@ -5,4 +5,5 @@
 # VS Code
 .vscode
 bin
-ezcon.toml
+tmp/ezcon1.toml
+tmp

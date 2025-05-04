@@ -19,6 +19,7 @@ package consensus
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
 	"github.com/ezcon-foundation/go-ezcon/node/tcp"
 	"log"
@@ -53,8 +54,16 @@ func (c *Consensus) Broadcast(txs []*transaction.Transaction, sig []byte) error 
 
 	wg.Wait()
 	close(errChan)
+
+	countErr := 0
 	for err := range errChan {
+		countErr++
 		log.Printf("Broadcast error: %v", err)
+	}
+
+	// nếu toàn bộ node đều không gửi được thì trả về false
+	if countErr == len(c.UNL) {
+		return errors.New("all node are unavailable")
 	}
 
 	return nil

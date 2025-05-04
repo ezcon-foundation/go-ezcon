@@ -32,18 +32,23 @@ type ProposalMessage struct {
 
 // handleProposal sẽ tập trung vào việc xử lý các giao dịch đề xuất trong trạng thái nghỉ của validator
 func (c *Consensus) handleProposal(msg tcp.Message) {
+
 	hasProposal := false
 	var proposedTxs []*transaction.Transaction
 
 	// Lặp qua các node có trong UNL, xác định giao dịch được gửi đến
-	for _, node := range c.UNL {
+	for _, node := range c.UNLPublicKey {
 		pubKey, err := crypto.PubKeyFromNode(node)
 		if err != nil {
+			log.Printf("Invalid pubkey: %v %v\n", err, node)
 			continue
 		}
 
+		ok := crypto.Verify(msg.Txs, msg.Sig, pubKey)
 		// xác thực các giao dịch có phải đến từ các node đã biết hay không?
-		if crypto.Verify(msg.Txs, msg.Sig, pubKey) {
+		if ok {
+
+			log.Printf("Receive msg from %v", node)
 
 			// Cần phải phân biệt message nhận được thuộc loại message nào?
 			var proposalMessage ProposalMessage

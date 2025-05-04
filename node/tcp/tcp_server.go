@@ -18,21 +18,12 @@
 package tcp
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 )
-
-// Message định nghĩa dữ liệu gửi/nhận qua TCP
-type Message struct {
-
-	// Danh sách các giao dịch
-	Txs []byte `json:"txs"`
-
-	// Chữ ký của node
-	Sig []byte `json:"sig"`
-}
 
 // TCPServer quản lý server nhận candidate set
 type TCPServer struct {
@@ -84,18 +75,17 @@ func (s *TCPServer) Stop() {
 func (s *TCPServer) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	var data []byte
-	n, err := conn.Read(data)
+	reader := bufio.NewReader(conn)
+	decoder := json.NewDecoder(reader)
+
+	var msg Message
+	err := decoder.Decode(&msg)
 	if err != nil {
-		log.Printf("TCP read error: %v", err)
+		fmt.Printf("Lỗi giải mã JSON hoặc client ngắt kết nối: %v\n", err)
 		return
 	}
 
-	var msg Message
-	if err := json.Unmarshal(data[:n], &msg); err != nil {
-		log.Printf("TCP unmarshal error: %v", err)
-		return
-	}
+	log.Printf("Receive msg: %+v", msg)
 
 	// Phân loại message dựa trên trạng thái đồng thuận
 	if s.isConsensing != nil && s.isConsensing() {

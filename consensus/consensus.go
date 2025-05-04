@@ -19,7 +19,7 @@ package consensus
 
 import (
 	"github.com/ezcon-foundation/go-ezcon/core/transaction"
-	tpc2 "github.com/ezcon-foundation/go-ezcon/node/tcp"
+	"github.com/ezcon-foundation/go-ezcon/node/tcp"
 	"sync"
 	"time"
 )
@@ -28,49 +28,50 @@ type Consensus struct {
 	Transactions        []*transaction.Transaction
 	proposalTransaction []*transaction.Transaction
 
-	UNL       []string
-	NodeID    string
-	PrivKey   []byte
-	Threshold float64 // 0.8
-	MaxRounds int     // 5
+	UNL          []string
+	UNLPublicKey []string
+	NodeID       string
+	PrivKey      []byte
+	Threshold    float64 // 0.8
 
 	// tcp server
-	server *tpc2.TCPServer
-	client *tpc2.TCPClient
+	server *tcp.TCPServer
+	client *tcp.TCPClient
 
 	isConsensing bool
 	mutex        sync.Mutex
 
-	proposalChan <-chan tpc2.Message // Kênh cho đề xuất
-	voteChan     <-chan tpc2.Message // Kênh cho phiếu bầu
+	proposalChan <-chan tcp.Message // Kênh cho đề xuất
+	voteChan     <-chan tcp.Message // Kênh cho phiếu bầu
 }
 
-func NewConsensus(unl []string, nodeID string, privKey []byte, tpcPort string) *Consensus {
+func NewConsensus(unl, unlPublicKey []string, nodeID string, privKey []byte, tpcPort string) *Consensus {
 
 	// create tcp server
-	server, err := tpc2.NewTCPServer(tpcPort)
+	server, err := tcp.NewTCPServer(tpcPort)
 	if err != nil {
 		return nil
 	}
 
 	// create tcp client
-	client := tpc2.NewTCPClient(2 * time.Second)
+	client := tcp.NewTCPClient(2 * time.Second)
 
 	// khởi tạo channel, giới hạn 100 giao dịch
-	proposalChan := make(chan tpc2.Message, 100)
-	voteChan := make(chan tpc2.Message, 100)
+	proposalChan := make(chan tcp.Message, 100)
+	voteChan := make(chan tcp.Message, 100)
 
 	// init consensus instance
 	c := &Consensus{
 		UNL:          unl,
+		UNLPublicKey: unlPublicKey,
 		NodeID:       nodeID,
 		PrivKey:      privKey,
 		Threshold:    0.8,
-		MaxRounds:    5,
 		server:       server,
 		client:       client,
 		proposalChan: proposalChan,
 		voteChan:     voteChan,
+		isConsensing: false,
 	}
 
 	// start tcp server

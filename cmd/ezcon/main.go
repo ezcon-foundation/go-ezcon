@@ -32,30 +32,6 @@ var (
 		Name:  "config",
 		Usage: "TOML configuration file",
 	}
-	NodeIDFlag = &cli.StringFlag{
-		Name:  "node_id",
-		Usage: "Node identifier",
-	}
-	PrivKeyFlag = &cli.StringFlag{
-		Name:  "private_key",
-		Usage: "Private key for signing",
-	}
-	UNLFlag = &cli.StringSliceFlag{
-		Name:  "unl",
-		Usage: "List of trusted validator nodes",
-	}
-	LedgerPathFlag = &cli.StringFlag{
-		Name:  "ledger_path",
-		Usage: "Path to ledger file",
-	}
-	RPCPortFlag = &cli.StringFlag{
-		Name:  "rpc_port",
-		Usage: "RPC server port",
-	}
-	ConsensusPortFlag = &cli.StringFlag{
-		Name:  "consensus_port",
-		Usage: "Consensus TCP server port",
-	}
 )
 
 func main() {
@@ -63,12 +39,6 @@ func main() {
 	app := &cli.App{
 		Flags: []cli.Flag{
 			ConfigFlag,
-			NodeIDFlag,
-			PrivKeyFlag,
-			UNLFlag,
-			LedgerPathFlag,
-			RPCPortFlag,
-			ConsensusPortFlag,
 		},
 		Name: "ezcon",
 		Action: func(c *cli.Context) error {
