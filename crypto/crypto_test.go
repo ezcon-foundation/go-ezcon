@@ -20,9 +20,9 @@ package crypto
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/decred/dcrd/crypto/blake256"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+	"github.com/ezcon-foundation/go-ezcon/crypto/blake256"
+	"github.com/ezcon-foundation/go-ezcon/crypto/secp256k1"
+	"github.com/ezcon-foundation/go-ezcon/crypto/secp256k1/ecdsa"
 	"log"
 	"testing"
 )
@@ -96,16 +96,16 @@ func TestCreateKeyPair(t *testing.T) {
 	fmt.Printf("Address: %s\n", address)
 	fmt.Printf("Address (from compressed): %s\n", addressFromCompressed)
 
-	// Private Key (Hex): d77c0b5d54213d97ae76a71205713742beac6cc00430d11f7cc4e37734de9d17
-	// Public Key Uncompressed (Hex): 04d071f8c5f516e3dce3c839aad2d1ae08c7be4b1202f6f236d8258bfc526cc997e42bd3f593cf946f45e3df815ad9975ca2669ccec7a8625a59d1d00a72b14984
-	// Public Key Compressed (Hex): 02d071f8c5f516e3dce3c839aad2d1ae08c7be4b1202f6f236d8258bfc526cc997
-	// Address: 0x7bedeca7db40a1fce52b58543e9fcc9c207c8bdd
-	// Address (from compressed): 0x7bedeca7db40a1fce52b58543e9fcc9c207c8bdd
+	// Private Key (Hex): 4bc30aa5172c5133a04a5873f87fdf9c0043844d611e6951e2553933703eb874
+	// Public Key Uncompressed (Hex): 04bf267139cfd2638fb1e8a54865aaa855329167190718a481ff374a44597c7f6cf9ffd7945f84fa617c7b0471515f23000613a3c1ad2117a8ba86db2571110c46
+	// Public Key Compressed (Hex): 02bf267139cfd2638fb1e8a54865aaa855329167190718a481ff374a44597c7f6c
+	// Address: 0xab79975d250d45f685f65e1b3d41234ced77f040
+	// Address (from compressed): 0xab79975d250d45f685f65e1b3d41234ced77f040
 }
 
 func TestSignMessage(t *testing.T) {
 
-	privateKeyHex := "d77c0b5d54213d97ae76a71205713742beac6cc00430d11f7cc4e37734de9d17"
+	privateKeyHex := "4bc30aa5172c5133a04a5873f87fdf9c0043844d611e6951e2553933703eb874"
 
 	// Decode private key from hex
 	privateKeyBytes, err := hex.DecodeString(privateKeyHex)
@@ -138,7 +138,7 @@ func TestSignMessage(t *testing.T) {
 
 func TestVerifyMessage(t *testing.T) {
 	// Decode hex-encoded serialized public key.
-	pubKeyBytes, err := hex.DecodeString("02d071f8c5f516e3dce3c839aad2d1ae08c7be4b1202f6f236d8258bfc526cc997")
+	pubKeyBytes, err := hex.DecodeString("02bf267139cfd2638fb1e8a54865aaa855329167190718a481ff374a44597c7f6c")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -150,7 +150,7 @@ func TestVerifyMessage(t *testing.T) {
 	}
 
 	// Decode hex-encoded serialized signature.
-	sigBytes, err := hex.DecodeString("3045022100b5940a92bf3ed205deef45ececa34d4edf3f10703ea189070751eee0e40e22cb022012d96d2526f29681b0de19ae0305cd5c04e7446f004cfc270065f6be507bdd6d")
+	sigBytes, err := hex.DecodeString("304402205898c006fbcefdbdea07c95532ca0c3015694419153a99dd9d02112d3a99a772022071dd1c65de9d9fed8dcf71b8e4955fdb38445f2a86ee652e99e7876e44ace73b")
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -20,9 +20,9 @@ package crypto
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/decred/dcrd/crypto/blake256"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
+	"github.com/ezcon-foundation/go-ezcon/crypto/blake256"
+	"github.com/ezcon-foundation/go-ezcon/crypto/secp256k1"
+	"github.com/ezcon-foundation/go-ezcon/crypto/secp256k1/ecdsa"
 	"golang.org/x/crypto/sha3"
 )
 
