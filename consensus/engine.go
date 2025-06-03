@@ -50,7 +50,7 @@ func (c *Consensus) RunEngine() {
 				// xử lý msg trong giai đoạn đang đồng thuận
 				c.handleVote(msg)
 			}()
-		case <-ticker.C:
+		case <-ticker.C: // Đây là trường hợp node tự đề xuất trong 3 giây
 
 			go func() {
 				c.mutex.Lock()
