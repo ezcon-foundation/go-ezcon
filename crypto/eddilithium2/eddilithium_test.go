@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/cloudflare/circl/sign/eddilithium2"
+	"github.com/ezcon-foundation/go-ezcon/crypto/eddilithium2"
 )
 
 func BenchmarkVerify(b *testing.B) {

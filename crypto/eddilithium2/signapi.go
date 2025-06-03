@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/asn1"
 
-	"github.com/cloudflare/circl/sign"
+	sign "github.com/ezcon-foundation/go-ezcon/crypto"
 )
 
 var sch sign.Scheme = &scheme{}

@@ -1,12 +1,12 @@
 package eddilithium2_test
 
 import (
-	"fmt"
+	"testing"
 
-	"github.com/cloudflare/circl/sign/eddilithium2"
+	"github.com/ezcon-foundation/go-ezcon/crypto/eddilithium2"
 )
 
-func Example() {
+func TestExample(t *testing.T) {
 	// Generates a keypair.
 	pk, sk, err := eddilithium2.GenerateKey(nil)
 	if err != nil {
@@ -38,7 +38,9 @@ func Example() {
 		panic("incorrect signature")
 	}
 
-	fmt.Printf("O.K.")
+	t.Log("O.K.")
+	t.Log(sk)
+	t.Log(pk)
 
 	// Output:
 	// O.K.
